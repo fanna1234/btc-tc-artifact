@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thrust/unique.h>
+#include <thrust/distance.h>
 
 namespace tot {
 

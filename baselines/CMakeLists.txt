@@ -6,7 +6,6 @@ cmake_minimum_required(VERSION 3.22)
 add_subdirectory(ToT-TPDS25)
 add_subdirectory(cusparse_tc)
 add_subdirectory(cublas_tc)
-add_subdirectory(graphblast)
 
 # TC-Compare preprocessing tools (for Green, HIndex, GroupTC baselines)
 add_subdirectory(TC-Compare)

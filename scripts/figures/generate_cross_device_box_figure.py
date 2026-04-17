@@ -29,7 +29,7 @@ DEVICE_SPECS = [
         "slug": "pro6000",
         "label": "RTX PRO\n6000",
         "short": "PRO 6000",
-        "csv_dir": REPO_ROOT / "results" / "csv",
+        "csv_dir": REPO_ROOT / "results" / "pro6000" / "csv",
     },
     {
         "slug": "h100",

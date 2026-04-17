@@ -1,0 +1,10 @@
+build/
+data/*.mtx
+data/*.tar.gz
+results-reproduce/
+results/figures/
+__pycache__/
+*.o
+*.bin
+*.pyc
+.cache/

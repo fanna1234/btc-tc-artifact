@@ -93,15 +93,42 @@ else
 fi
 echo ""
 
-# Step 4: LAGraph (CPU + GPU)
-echo "[4/5] Building LAGraph..."
+# Step 4a: SuiteSparse:GraphBLAS (required by LAGraph)
+echo "[4/6] Building SuiteSparse:GraphBLAS..."
+GRB_DIR="baselines/SuiteSparse-GraphBLAS-cuda"
+GRB_LIB="$GRB_DIR/build/libgraphblas.so"
+if [ -d "$GRB_DIR" ]; then
+    if [ ! -f "$GRB_LIB" ]; then
+        echo "  GraphBLAS (this may take 5-10 minutes)..."
+        mkdir -p "$GRB_DIR/build" && cd "$GRB_DIR/build"
+        if cmake .. -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -3 && make -j$(nproc) 2>&1 | tail -5; then
+            echo "  GraphBLAS: OK"
+        else
+            echo "  GraphBLAS: FAIL (LAGraph will be skipped)"
+        fi
+        cd "$ROOT"
+    else
+        echo "  GraphBLAS: already built"
+    fi
+else
+    echo "  SKIP (source not found)"
+fi
+echo ""
+
+# Step 4b: LAGraph (CPU + GPU)
+echo "[5/6] Building LAGraph..."
 LA_DIR="baselines/LAGraph"
 if [ -d "$LA_DIR" ]; then
     # CPU build
     if [ ! -f "$LA_DIR/build/experimental/benchmark/tcc_demo" ]; then
         echo -n "  LAGraph-CPU... "
         mkdir -p "$LA_DIR/build" && cd "$LA_DIR/build"
-        if cmake .. 2>/dev/null && make -j$(nproc) 2>/dev/null; then
+        GRB_BUILD="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda/build"
+        GRB_INC="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda/Include"
+        if cmake .. -DGRAPHBLAS_ROOT="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda" \
+                    -DGRAPHBLAS_LIBRARY="$GRB_BUILD/libgraphblas.so" \
+                    -DGRAPHBLAS_INCLUDE_DIR="$GRB_INC" \
+                    2>/dev/null && make -j$(nproc) 2>/dev/null; then
             echo "OK"
         else
             echo "FAIL"
@@ -115,7 +142,11 @@ if [ -d "$LA_DIR" ]; then
         echo -n "  LAGraph-GPU... "
         if [ -d "$ROOT/baselines/SuiteSparse-GraphBLAS-cuda" ]; then
             mkdir -p "$LA_DIR/build-gpu" && cd "$LA_DIR/build-gpu"
-            if cmake .. -DGRAPHBLAS_ROOT="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda" 2>/dev/null && make -j$(nproc) 2>/dev/null; then
+            GRB_BUILD="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda/build"
+            if cmake .. -DGRAPHBLAS_ROOT="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda" \
+                        -DGRAPHBLAS_LIBRARY="$GRB_BUILD/libgraphblas.so" \
+                        -DGRAPHBLAS_INCLUDE_DIR="$ROOT/baselines/SuiteSparse-GraphBLAS-cuda/Include" \
+                        2>/dev/null && make -j$(nproc) 2>/dev/null; then
                 echo "OK"
             else
                 echo "FAIL (non-critical)"
@@ -132,8 +163,8 @@ else
 fi
 echo ""
 
-# Step 5: TC-Compare preprocessing tools
-echo "[5/5] Building TC-Compare preprocessing tools..."
+# Step 6: TC-Compare preprocessing tools
+echo "[6/6] Building TC-Compare preprocessing tools..."
 PREPROC_DIR="baselines/TC-Compare/preprocessing/cpu_preprocessing"
 for tool in XXX2CSR CSR2XXX; do
     tool_dir="$PREPROC_DIR/$tool"

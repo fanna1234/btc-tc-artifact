@@ -32,16 +32,44 @@ Quick mode (core claims only, ~30 min):
 bash scripts/reproduce_paper.sh --quick
 ```
 
+### Expected Output (smoke test)
+
+```
+=== BTC-TC Smoke Test ===
+PASS  BTC-TC  lpl1: 97633 triangles (expected 97633)
+PASS  BTC-TC  cant: 18370150 triangles (expected 18370150)
+PASS  BTC-TC  bcsstk23: 29737 triangles (expected 29737)
+PASS  ToT     lpl1: 97633 triangles (expected 97633)
+PASS  ToT     cant: 18370150 triangles (expected 18370150)
+=== Results: 5 passed, 0 failed, 0 skipped / 5 total ===
+ALL PASSED
+```
+
 ## Requirements
 
-| Component | Minimum |
-|-----------|---------|
-| GPU | NVIDIA sm_80+ (Ampere / Hopper / Blackwell), >= 16 GB VRAM |
-| CUDA Toolkit | >= 12.2 |
-| GCC | >= 11 |
-| CMake | >= 3.18 |
-| Python | >= 3.10 (matplotlib, pandas, numpy for figures) |
-| MPI | OpenMPI or MPICH (for TRUST baseline only) |
+| Component | Minimum | Tested |
+|-----------|---------|--------|
+| GPU | NVIDIA sm_80+ (Ampere/Hopper/Blackwell), >= 16 GB | A800 80GB, H100 80GB, PRO 6000 96GB |
+| CUDA Toolkit | >= 12.2 | 12.2, 13.1, 13.2 |
+| GCC | >= 11 | 13.3 |
+| CMake | >= 3.18 | 3.28 |
+| Python | >= 3.10 | 3.12 |
+| libnuma-dev | required | (for vertex reordering) |
+| MPI | optional | (only for TRUST baseline) |
+
+## Claims and Verification
+
+See **[CLAIMS.md](CLAIMS.md)** for a detailed mapping of each paper claim to the
+exact command and expected output that verifies it. Key claims:
+
+| Claim | Section | Verification |
+|-------|---------|--------------|
+| BTC-TC exact on all 36 datasets | 4.3 | `smoke_test.sh` (quick) or full benchmark |
+| 1.92x GM kernel speedup vs ToT | 4.2 | `CLAIMS.md` "Kernel Speedup" |
+| 8.0x GM E2E speedup vs ToT | 4.2 | `CLAIMS.md` "E2E Speedup" |
+| Hybrid dispatch adds 1.45x | 4.6 | `run_ablation.sh` |
+| Consistent across 3 GPU generations | 4.4 | Pre-computed CSVs for 3 devices |
+| Threshold insensitive in [64, 2048] | 3.4 | `run_tau_sweep.sh` |
 
 ## Directory Structure
 
@@ -49,11 +77,11 @@ bash scripts/reproduce_paper.sh --quick
 btc-tc-artifact/
 ├── btc/                  Core BTC-TC library (header-only C++/CUDA)
 ├── apps/                 Paper executables (11 targets)
-│   ├── btc_tc_lite.cu        Main program (BTC-Lite: auto block-size selection)
-│   ├── btc_tc_adaptive_*.cu  Fixed block-size variants (16x128, 16x32)
+│   ├── btc_tc_lite.cu        Main program (BTC-Lite: auto block-size)
+│   ├── btc_tc_adaptive_*.cu  Fixed block-size variants
 │   ├── btc_tc_v*.cu          Ablation variants (pure-MMA vs hybrid)
-│   ├── tau_sweep.cu           Threshold sensitivity (Fig 6)
-│   ├── hybrid_ablation.cu     Hybrid dispatch ablation (Fig 9a)
+│   ├── tau_sweep.cu          Threshold sensitivity (Fig 6)
+│   ├── hybrid_ablation.cu    Hybrid dispatch ablation (Fig 9a)
 │   └── btc_blocksize_bench.cu MMA shape benchmark (Fig 9c)
 ├── baselines/            12 baseline implementations (source only)
 ├── scripts/
@@ -62,28 +90,28 @@ btc-tc-artifact/
 │   ├── download_datasets.sh  Download 36 benchmark datasets
 │   ├── smoke_test.sh         Quick correctness verification
 │   ├── run_*.sh              Individual experiment runners
-│   └── figures/              Figure generation scripts (7 figures)
-├── results/              Pre-computed results (CSV) for verification
+│   └── figures/              Figure generation scripts
+├── results/              Pre-computed results (CSV, for verification)
 │   ├── pro6000/csv/          RTX PRO 6000 (Blackwell sm_120a)
 │   ├── h100/csv/             H100 SXM (Hopper sm_90a)
 │   ├── a800/csv/             A800 SXM (Ampere sm_80)
 │   ├── ablation/csv/         Ablation study data
-│   ├── tau_sweep/            Threshold sensitivity data
-│   ├── e2e_breakdown/        End-to-end timing breakdown
-│   ├── blocksize_bench/      MMA shape comparison
-│   ├── ncu/                  Nsight Compute profiling exports
-│   └── reorder_compare/      Vertex reordering comparison
+│   └── ...                   tau_sweep, e2e_breakdown, ncu, etc.
 ├── data/
-│   └── paper_datasets.txt    36 dataset names (download_datasets.sh fetches them)
+│   └── paper_datasets.txt    36 dataset names
+├── CLAIMS.md             Claim-to-command verification guide
 ├── CMakeLists.txt
 ├── requirements.txt
-├── LICENSE
-└── README.md
+└── LICENSE
 ```
 
 ## Building
 
 ```bash
+# Recommended: build everything (BTC-TC + all baselines)
+bash scripts/build_all.sh
+
+# Or manually:
 mkdir -p build && cd build
 cmake ..                    # Auto-detects GPU architecture
 make -j$(nproc)
@@ -91,7 +119,7 @@ make -j$(nproc)
 
 To build only BTC-TC (skip baselines):
 ```bash
-cmake .. -DBTC_BUILD_BASELINES=OFF
+cmake .. -DBTC_BUILD_BASELINES=OFF && make -j$(nproc)
 ```
 
 ## Reproduction Pipeline
@@ -103,33 +131,35 @@ cmake .. -DBTC_BUILD_BASELINES=OFF
 3. **Claim verification** — automated check of key paper numbers
 4. **Ablation experiments** — hybrid dispatch, block-size, MMA shape, reordering
 5. **Sensitivity sweeps** — threshold (tau) and E2E breakdown
-6. **Figure generation** — all 7 paper figures from result CSVs
+6. **Figure generation** — all paper figures from result CSVs
 
 ### Verifying Without Re-running
 
-Pre-computed results are included in `results/`. To regenerate figures directly:
+Pre-computed results from 3 GPU platforms are included in `results/`. To regenerate
+figures directly from these results:
 ```bash
-bash scripts/regenerate_all_figures.sh
+bash scripts/regenerate_all_figures.sh    # Output: results/figures/
 ```
 
-Output: `results/figures/`
-
-## Key Claims Verified by This Artifact
-
-| Claim | Section | How to Verify |
-|-------|---------|---------------|
-| BTC-TC exact on all 36 datasets | 4.3 | `smoke_test.sh` + full benchmark |
-| 1.92x GM kernel speedup vs ToT | 4.2 | `reproduce_paper.sh` Step 3 |
-| 8.0x GM E2E speedup vs ToT | 4.2 | `reproduce_paper.sh` Step 3 |
-| Hybrid dispatch adds 1.45x | 4.6 | `run_ablation.sh` |
-| Consistent across 3 GPU generations | 4.4 | Run on different GPUs |
+To verify specific paper numbers without running benchmarks, see `CLAIMS.md` for
+one-liner Python commands that compute speedups from the pre-computed CSVs.
 
 ## Datasets
 
-36 graphs from SuiteSparse Matrix Collection, covering:
+36 graphs from [SuiteSparse Matrix Collection](https://sparse.tamu.edu), covering:
 - Scientific computing meshes (FEM, molecular dynamics)
-- Social networks (wiki-Vote, com-Youtube, flickr)
+- Social networks (wiki-Vote, flickr)
 - Web graphs (eu-2005, web-Google, web-NotreDame)
 - Structural engineering (bcsstk series)
 
-Total download size: ~1.2 GB. See `data/paper_datasets.txt` for the full list.
+Total download: ~1.2 GB. List: `data/paper_datasets.txt`.
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `numa.h: No such file` | Install `libnuma-dev`: `apt install libnuma-dev` |
+| `thrust::distance` error (ToT) | Already patched in this artifact for CUDA >= 13.2 |
+| TRUST build fails | Ensure MPI is installed: `apt install libopenmpi-dev` |
+| Some TC-Compare baselines fail | Non-critical; `build_all.sh` continues on failure |
+| CMake picks wrong CUDA | Set: `cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc` |

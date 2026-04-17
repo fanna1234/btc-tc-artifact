@@ -1,14 +1,29 @@
 cmake_minimum_required(VERSION 3.22)
 project(btc_tc LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  # Set this to match your GPU, e.g. 80/86/89/90/120.
-  # Try to auto-detect or default to 120 (Blackwell) for newer GPUs.
-  # Fallback: 80 (Ampere) for compatibility.
-  set(CMAKE_CUDA_ARCHITECTURES native)
+  # "native" requires CMake >= 3.24. Fall back to auto-detect via nvidia-smi.
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    set(CMAKE_CUDA_ARCHITECTURES native)
+  else()
+    execute_process(
+      COMMAND nvidia-smi --query-gpu=compute_cap --format=csv,noheader
+      OUTPUT_VARIABLE _gpu_cc OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(_gpu_cc)
+      string(REGEX MATCH "([0-9]+)\\.([0-9]+)" _m "${_gpu_cc}")
+      if(_m)
+        set(CMAKE_CUDA_ARCHITECTURES "${CMAKE_MATCH_1}${CMAKE_MATCH_2}")
+        message(STATUS "Auto-detected GPU arch: sm_${CMAKE_CUDA_ARCHITECTURES}")
+      endif()
+    endif()
+    if(NOT CMAKE_CUDA_ARCHITECTURES)
+      set(CMAKE_CUDA_ARCHITECTURES 80)
+      message(STATUS "Defaulting to sm_80 (Ampere)")
+    endif()
+  endif()
 endif()
 
 # Prefer latest CUDA toolchain when available (avoids older NVCC defaults such as sm_52).
@@ -43,7 +58,7 @@ if(NOT DEFINED ENV{CUDAFLAGS} AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL "native"
 endif()
 
 enable_language(CUDA)
-set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 if(_btc_restore_cudaflags)
@@ -56,6 +71,11 @@ add_definitions(-DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_OMP)
 
 find_package(OpenMP REQUIRED)
 find_package(CUDAToolkit REQUIRED)
+
+# Guard: if conda injects a sysroot librt, drop it (glibc 2.34+ has rt in libc).
+if(CUDAToolkit_rt_LIBRARY AND CUDAToolkit_rt_LIBRARY MATCHES "conda")
+  unset(CUDAToolkit_rt_LIBRARY CACHE)
+endif()
 
 # Rabbit Order + Gorder reordering libraries (CPU-only, compiled by host CXX compiler)
 add_library(btc_reorder STATIC

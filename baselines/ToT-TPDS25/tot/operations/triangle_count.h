@@ -14,6 +14,7 @@
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
+#include <thrust/distance.h>
 
 namespace tot {
 

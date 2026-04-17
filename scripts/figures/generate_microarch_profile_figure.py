@@ -112,10 +112,15 @@ C_GRID = "#D5DBDB"
 # --------------- data loading ---------------
 
 def find_latest_csv(method_key: str, dataset: str) -> Path | None:
-    pattern = str(
-        REPO_ROOT / f"results/ncu/pro6000_{method_key}_{dataset}_2026*.raw.csv"
-    )
+    """Find NCU CSV for a method/dataset pair. Tries any device tag prefix."""
+    ncu_dir = REPO_ROOT / "results" / "ncu"
+    # Try exact match first (pro6000_ prefix from paper data)
+    pattern = str(ncu_dir / f"pro6000_{method_key}_{dataset}*.raw.csv")
     matches = sorted(glob.glob(pattern))
+    if not matches:
+        # Fallback: any tag prefix (*_method_dataset*.raw.csv)
+        pattern = str(ncu_dir / f"*_{method_key}_{dataset}*.raw.csv")
+        matches = sorted(glob.glob(pattern))
     return Path(matches[-1]) if matches else None
 
 

@@ -97,7 +97,7 @@ def main():
     mb = mb[mb["Dataset"].isin(paper_ds)]
 
     # --- Load MMA shape data (blocksize_bench) ---
-    shape_csv = repo_root / "results" / "blocksize_bench" / "blocksize_bench.csv"
+    shape_csv = repo_root / "results" / "blocksize_bench" / "blocksize_bench_paper37.csv"
     shape_blocks = ["8x128", "16x128", "16x256"]
     sdf = pd.read_csv(shape_csv)
     sdf = sdf[sdf["status"] == "PASS"].copy()
