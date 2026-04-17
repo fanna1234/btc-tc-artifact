@@ -1,6 +1,6 @@
 # BTC-TC: Exact GPU Triangle Counting via Bit Tensor Core Co-Design
 
-Artifact for SC26 submission **pap257**.
+Artifact for SC26 submission (double-blind review).
 
 BTC-TC accelerates exact triangle counting on GPUs through format-operator-dispatch
 co-design around binary Tensor Cores (`m16n8k128.and.popc`). It evaluates
