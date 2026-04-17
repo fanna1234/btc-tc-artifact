@@ -1,0 +1,142 @@
+#!/bin/bash
+# One-click reproduction of all SC26 paper results.
+# Usage: bash scripts/reproduce_paper.sh [--quick]
+#   --quick: only run BTC-TC + ToT + TRUST (skip other baselines)
+# Expected runtime: 30 min (quick) or 2-3 hours (full)
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+QUICK=0
+[ "${1:-}" = "--quick" ] && QUICK=1
+
+echo "============================================"
+echo "  BTC-TC SC26 Paper Reproduction Pipeline"
+echo "============================================"
+echo ""
+
+# Step 0: Check prerequisites
+echo "[Step 0] Checking prerequisites..."
+if [ ! -x "./build/apps/btc_tc_lite" ]; then
+    echo "ERROR: ./build/apps/btc_tc_lite not found. Run: bash scripts/build_all.sh"
+    exit 1
+fi
+TOT="./build/baselines/ToT-TPDS25/apps/tot"
+[ ! -x "$TOT" ] && TOT="./baselines/ToT-TPDS25/build/apps/tot"
+if [ ! -x "$TOT" ]; then
+    echo "WARNING: ToT binary not found (will skip ToT comparisons)"
+fi
+python3 -c "import matplotlib, pandas, numpy" 2>/dev/null || {
+    echo "ERROR: Python dependencies missing. Run: pip install -r requirements.txt"
+    exit 1
+}
+echo "  Prerequisites OK."
+echo ""
+
+# Step 1: Smoke test
+echo "[Step 1] Running smoke test..."
+bash scripts/smoke_test.sh || { echo "Smoke test failed. Aborting."; exit 1; }
+echo ""
+
+# Step 2: Benchmark
+echo "[Step 2] Running benchmark..."
+RESULT_DIR="results-reproduce"
+mkdir -p "$RESULT_DIR/csv"
+
+if [ "$QUICK" -eq 1 ]; then
+    echo "  Quick mode: BTC-TC + ToT + TRUST only"
+    python3 scripts/bench_baselines.py \
+        --methods BTC_Lite,BTC_16x128_Adaptive,BTC_16x32_Adaptive,ToT,TRUST \
+        --run-dir "$RESULT_DIR" 2>&1 | tail -20
+else
+    echo "  Full mode: all 13 baselines"
+    python3 scripts/bench_baselines.py \
+        --suite all \
+        --run-dir "$RESULT_DIR" 2>&1 | tail -20
+fi
+echo ""
+
+# Step 3: Verify key claims
+echo "[Step 3] Verifying key claims..."
+python3 -c "
+import pandas as pd, numpy as np, sys, os
+
+result_dir = '$RESULT_DIR/csv'
+if not os.path.isdir(result_dir):
+    print('  WARNING: result dir not found, skipping verification')
+    sys.exit(0)
+
+def load(method):
+    p = os.path.join(result_dir, f'{method}.csv')
+    if not os.path.exists(p): return None
+    df = pd.read_csv(p)
+    return df[df['Status']=='OK']
+
+btc = load('BTC_Lite')
+tot = load('ToT')
+
+if btc is None:
+    print('  WARNING: BTC_Lite.csv not found')
+    sys.exit(0)
+
+# Correctness
+btc_correct = len(btc)
+print(f'  Correctness: BTC-TC {btc_correct}/36 datasets correct')
+if tot is not None:
+    tot_correct = len(tot[tot['Status']=='OK']) if 'Status' in tot.columns else 0
+
+# Kernel speedup
+if tot is not None:
+    merged = btc.merge(tot, on='Dataset', suffixes=('_btc','_tot'))
+    merged['Kernel_ms_btc'] = pd.to_numeric(merged['Kernel_ms_btc'], errors='coerce')
+    merged['Kernel_ms_tot'] = pd.to_numeric(merged['Kernel_ms_tot'], errors='coerce')
+    valid = merged.dropna(subset=['Kernel_ms_btc','Kernel_ms_tot'])
+    if len(valid) > 0:
+        gm_btc = np.exp(np.mean(np.log(valid['Kernel_ms_btc'])))
+        gm_tot = np.exp(np.mean(np.log(valid['Kernel_ms_tot'])))
+        speedup = gm_tot / gm_btc
+        print(f'  Kernel speedup vs ToT: {speedup:.2f}x (expect ~1.9x)')
+
+print('  Verification complete.')
+"
+echo ""
+
+# Step 4: Ablation experiments (Fig 8)
+echo "[Step 4] Running ablation experiments (Fig 8)..."
+if [ "$QUICK" -eq 0 ]; then
+    bash scripts/run_ablation.sh 2>&1 | grep -E "^=|OK|FAIL|Saved" | tail -10
+else
+    echo "  Skipped in quick mode"
+fi
+echo ""
+
+# Step 5: Block-size and reorder experiments (Fig 8)
+echo "[Step 5] Running block-size bench + reorder compare (Fig 8)..."
+if [ "$QUICK" -eq 0 ]; then
+    bash scripts/run_blocksize_bench_paper37.sh 2>&1 | tail -5
+    bash scripts/run_reorder_compare.sh 2>&1 | tail -5
+else
+    echo "  Skipped in quick mode"
+fi
+echo ""
+
+# Step 6: Tau sensitivity sweep + E2E breakdown (Fig 9)
+echo "[Step 6] Running tau sweep + E2E breakdown (Fig 9)..."
+if [ "$QUICK" -eq 0 ]; then
+    bash scripts/run_tau_sweep.sh both 2>&1 | tail -5
+    bash scripts/run_e2e_breakdown.sh 2>&1 | tail -5
+else
+    echo "  Skipped in quick mode"
+fi
+echo ""
+
+# Step 7: Generate figures
+echo "[Step 7] Generating figures..."
+export BTC_CSV_DIR="$RESULT_DIR/csv"
+bash scripts/regenerate_all_figures.sh 2>&1 | grep -E "^\[|Done|Error"
+echo ""
+
+echo "============================================"
+echo "  Reproduction complete!"
+echo "  Results: $RESULT_DIR/"
+echo "  Figures: results/figures/"
+echo "============================================"

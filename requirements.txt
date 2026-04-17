@@ -1,0 +1,6 @@
+# Python dependencies for figure generation and analysis.
+# Install: pip install -r requirements.txt
+matplotlib>=3.7
+pandas>=1.5
+numpy>=1.24
+scipy>=1.10

@@ -1,0 +1,65 @@
+{
+  "name": "TC-Compare",
+  "upstream": {
+    "repo": "https://github.com/Jangbao/TC-Compare.git",
+    "path": "baselines/TC-Compare",
+    "commit": "149b90d99083e72f5e47ecc32bc228d0b4c67386"
+  },
+  "algorithms": {
+    "bisson": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/Bisson/bisson"
+      ],
+      "input": "edges_u32.bin"
+    },
+    "fox": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/Fox/fox"
+      ],
+      "input": "edges_u32.bin"
+    },
+    "green": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/Green/green"
+      ],
+      "input": "graph/{begin.bin,source.bin,adjacent.bin}"
+    },
+    "grouptc": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/GroupTC/grouptc"
+      ],
+      "input": "graph/{begin.bin,source.bin,adjacent.bin}"
+    },
+    "hindex": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/H-INDEX/hindex"
+      ],
+      "input": "graph/{begin.bin,source.bin,adjacent.bin}"
+    },
+    "hu": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/Hu/hu"
+      ],
+      "input": "edges_u32.bin"
+    },
+    "polak": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/polak/polak"
+      ],
+      "input": "polak_edges.bin"
+    },
+    "tricore": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/tricore/tricore"
+      ],
+      "input": "edges_u32.bin"
+    },
+    "trust": {
+      "exe_candidates": [
+        "baselines/TC-Compare/approach/TRUST/trust"
+      ],
+      "input": "graph/{begin.bin,source.bin,adjacent.bin}"
+    }
+  }
+}
+

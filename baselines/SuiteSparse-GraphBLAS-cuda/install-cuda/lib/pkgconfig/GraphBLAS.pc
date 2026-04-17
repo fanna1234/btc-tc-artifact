@@ -1,0 +1,18 @@
+# GraphBLAS, Copyright (c) 2017-2025, Timothy A. Davis.
+# All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+prefix=/home/isrc/JKF/btc-tc/baselines/SuiteSparse-GraphBLAS-cuda/install-cuda
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/suitesparse
+
+Name: GraphBLAS
+URL: https://github.com/DrTimothyAldenDavis/SuiteSparse
+Description: Complete implementation of the GraphBLAS standard in SuiteSparse
+Version: 10.2.0
+Requires.private: 
+Libs: -L${libdir} -lgraphblas
+Libs.private: 
+Cflags: -I${includedir}
+Cflags.private: -DGB_STATIC 

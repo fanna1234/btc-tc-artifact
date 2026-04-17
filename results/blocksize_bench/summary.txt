@@ -1,0 +1,16 @@
+Blocksize Bench Summary (paper 37 datasets)
+Generated: 2026-03-28 05:42:59
+Log dir: results/blocksize_bench/logs
+Rows: 108
+Datasets (with any rows): 36
+Datasets (complete ['8x128', '16x128', '16x256']): 36
+
+Geometric-mean kernel time (ms):
+  8x128: 0.224317  (ratio vs 16x128: 1.555x)
+  16x128: 0.144216  (ratio vs 16x128: 1.000x)
+  16x256: 0.251922  (ratio vs 16x128: 1.747x)
+
+Win counts (fastest among blocks, per dataset):
+  8x128: 0/36
+  16x128: 35/36
+  16x256: 1/36
