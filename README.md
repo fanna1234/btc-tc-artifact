@@ -10,26 +10,39 @@ CUDA-core path.
 
 ## Quick Start
 
+**One command from scratch** — handles OS/Python deps, dataset download, build,
+smoke test, and reproduction, in that order:
+
 ```bash
-# 1. Install Python dependencies (for figure generation)
-pip install -r requirements.txt
+# Before the first run, install OS packages (needs sudo):
+sudo apt-get install -y libnuma-dev libopenmpi-dev
 
-# 2. Download all 36 benchmark datasets (~1.2 GB)
-bash scripts/download_datasets.sh
-
-# 3. Build BTC-TC and all baselines
-bash scripts/build_all.sh
-
-# 4. Quick smoke test (<1 min)
-bash scripts/smoke_test.sh
-
-# 5. One-click full reproduction (~2-3 hours)
-bash scripts/reproduce_paper.sh
+bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
+bash scripts/run_all.sh --quick   # core claims only,   ~35 min
+bash scripts/run_all.sh --smoke   # build + correctness, ~15 min
 ```
 
-Quick mode (core claims only, ~30 min):
+Total disk: ~8 GB (datasets 1.2 GB + build 5-6 GB). Total wall time on a single
+modern NVIDIA GPU (sm_80+): roughly 30 min for smoke, 45 min for quick, 3 h for
+full. `run_all.sh` is idempotent — rerunning resumes from the last failed step.
+
+### Manual Step-by-Step (if `run_all.sh` has issues)
+
 ```bash
-bash scripts/reproduce_paper.sh --quick
+# 1. Python deps (add --break-system-packages on Ubuntu 24.04+ for PEP 668)
+pip install -r requirements.txt
+
+# 2. Download 36 benchmark datasets (~1.2 GB)
+bash scripts/download_datasets.sh
+
+# 3. Build BTC-TC + baselines (~30-45 min, compiles GraphBLAS from source)
+bash scripts/build_all.sh
+
+# 4. Smoke test (<1 min)
+bash scripts/smoke_test.sh
+
+# 5. Full reproduction (~2-3 hours) — or add --quick for ~30 min
+bash scripts/reproduce_paper.sh
 ```
 
 ### Expected Output (smoke test)
