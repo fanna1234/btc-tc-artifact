@@ -1,4 +1,8 @@
-# BTC-TC: Exact GPU Triangle Counting via Bit Tensor Core Co-Design
+# BTC-TC: Exact GPU Triangle Counting with Hybrid Bit Tensor Cores and CUDA Cores
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![SC26](https://img.shields.io/badge/SC26-accepted-2ea44f.svg)](https://sc26.supercomputing.org/)
+[![DOI](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](#citation)
 
 Reproducibility artifact for the SC '26 paper:
 
@@ -8,9 +12,21 @@ Reproducibility artifact for the SC '26 paper:
 > In Proceedings of the International Conference for High Performance Computing,
 > Networking, Storage, and Analysis (SC '26), 2026.
 
+**Authors** (✉ corresponding author):
+
+| Author | Email |
+|--------|-------|
+| Kaifan Jia | jiakaifan23@mails.ucas.ac.cn |
+| Yongchun Jiang | jiangyongchun24@mails.ucas.ac.cn |
+| Zhihao Ling | lingzhihao24@mails.ucas.ac.cn |
+| Minghui Zhang | zhangminghui241@mails.ucas.ac.cn |
+| Xuran Wang | wangxuran25@mails.ucas.ac.cn |
+| Ran Bao | baoran24@mails.ucas.ac.cn |
+| Haonan Zou | zouhaonan23@mails.ucas.ac.cn |
+| Heng Zhang ✉ | zhangheng17@iscas.ac.cn |
+
 - **Code:** <https://github.com/fanna1234/btc-tc-artifact>
 - **Archived:** Zenodo DOI — assigned at the 2026-08-25 artifact freeze (added here once minted)
-- **Contact:** Heng Zhang (corresponding author) &lt;zhangheng17@iscas.ac.cn&gt;
 
 BTC-TC accelerates exact triangle counting on GPUs through format-operator-dispatch
 co-design around binary Tensor Cores (`m16n8k128.and.popc`). It evaluates
@@ -93,6 +109,20 @@ exact command and expected output that verifies it. Key claims:
 | Hybrid dispatch adds 1.45x | 4.6 | `run_ablation.sh` |
 | Consistent across 3 GPU generations | 4.4 | Pre-computed CSVs for 3 devices |
 | Threshold insensitive in [64, 2048] | 3.4 | `run_tau_sweep.sh` |
+
+## Artifact Evaluation (SC26)
+
+This artifact targets the SC26 reproducibility badges below. Each row lists the single
+check a reviewer can run to grant it:
+
+| Badge | How a reviewer verifies it |
+|-------|----------------------------|
+| **Artifacts Available** | Public repository, archived on Zenodo with a persistent DOI (see [Citation](#citation)). |
+| **Artifacts Evaluated — Functional** | `bash scripts/run_all.sh --smoke` builds BTC-TC + baselines and passes all correctness checks (~15 min). |
+| **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the headline speedups (1.92× kernel, 8.0× E2E) in ~35 min. |
+
+Every paper claim is mapped to its exact command and expected value in
+**[CLAIMS.md](CLAIMS.md)**.
 
 ## Directory Structure
 
@@ -186,3 +216,25 @@ Total download: ~1.2 GB. List: `data/paper_datasets.txt`.
 | TRUST build fails | Ensure MPI is installed: `apt install libopenmpi-dev` |
 | Some TC-Compare baselines fail | Non-critical; `build_all.sh` continues on failure |
 | CMake picks wrong CUDA | Set: `cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc` |
+
+## Citation
+
+If you use BTC-TC in your research, please cite:
+
+```bibtex
+@inproceedings{jia2026btctc,
+  author    = {Jia, Kaifan and Jiang, Yongchun and Ling, Zhihao and Zhang, Minghui and
+               Wang, Xuran and Bao, Ran and Zou, Haonan and Zhang, Heng},
+  title     = {{BTC-TC}: Exact {GPU} Triangle Counting with Hybrid Bit Tensor Cores and {CUDA} Cores},
+  booktitle = {Proceedings of the International Conference for High Performance Computing,
+               Networking, Storage, and Analysis (SC '26)},
+  year      = {2026},
+}
+```
+
+A machine-readable [`CITATION.cff`](CITATION.cff) is also provided; GitHub renders a
+**"Cite this repository"** button from it on the project page.
+
+## License
+
+Released under the [MIT License](LICENSE).

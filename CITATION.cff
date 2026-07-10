@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this artifact, please cite the paper below."
+title: "BTC-TC artifact: Exact GPU Triangle Counting with Hybrid Bit Tensor Cores and CUDA Cores"
+type: software
+repository-code: "https://github.com/fanna1234/btc-tc-artifact"
+license: MIT
+authors:
+  - family-names: Jia
+    given-names: Kaifan
+    email: jiakaifan23@mails.ucas.ac.cn
+    affiliation: "Institute of Software, CAS & University of Chinese Academy of Sciences"
+  - family-names: Jiang
+    given-names: Yongchun
+  - family-names: Ling
+    given-names: Zhihao
+  - family-names: Zhang
+    given-names: Minghui
+  - family-names: Wang
+    given-names: Xuran
+  - family-names: Bao
+    given-names: Ran
+  - family-names: Zou
+    given-names: Haonan
+  - family-names: Zhang
+    given-names: Heng
+    email: zhangheng17@iscas.ac.cn
+    affiliation: "Institute of Software, CAS & University of Chinese Academy of Sciences"
+preferred-citation:
+  type: conference-paper
+  title: "BTC-TC: Exact GPU Triangle Counting with Hybrid Bit Tensor Cores and CUDA Cores"
+  year: 2026
+  collection-title: "Proceedings of the International Conference for High Performance Computing, Networking, Storage, and Analysis (SC '26)"
+  authors:
+    - family-names: Jia
+      given-names: Kaifan
+    - family-names: Jiang
+      given-names: Yongchun
+    - family-names: Ling
+      given-names: Zhihao
+    - family-names: Zhang
+      given-names: Minghui
+    - family-names: Wang
+      given-names: Xuran
+    - family-names: Bao
+      given-names: Ran
+    - family-names: Zou
+      given-names: Haonan
+    - family-names: Zhang
+      given-names: Heng
+# After the 2026-08-25 Zenodo freeze, add the artifact DOI here, e.g.:
+# doi: 10.5281/zenodo.XXXXXXX
