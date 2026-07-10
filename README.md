@@ -1,6 +1,16 @@
 # BTC-TC: Exact GPU Triangle Counting via Bit Tensor Core Co-Design
 
-Artifact for SC26 submission (double-blind review).
+Reproducibility artifact for the SC '26 paper:
+
+> Kaifan Jia, Yongchun Jiang, Zhihao Ling, Minghui Zhang, Xuran Wang, Ran Bao,
+> Haonan Zou, and Heng Zhang.
+> *BTC-TC: Exact GPU Triangle Counting with Hybrid Bit Tensor Cores and CUDA Cores.*
+> In Proceedings of the International Conference for High Performance Computing,
+> Networking, Storage, and Analysis (SC '26), 2026.
+
+- **Code:** <https://github.com/fanna1234/btc-tc-artifact>
+- **Archived:** Zenodo DOI — assigned at the 2026-08-25 artifact freeze (added here once minted)
+- **Contact:** Heng Zhang (corresponding author) &lt;zhangheng17@iscas.ac.cn&gt;
 
 BTC-TC accelerates exact triangle counting on GPUs through format-operator-dispatch
 co-design around binary Tensor Cores (`m16n8k128.and.popc`). It evaluates

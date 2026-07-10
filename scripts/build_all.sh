@@ -88,9 +88,9 @@ if [ -d "$TRUST_DIR/Without-graph-partition" ] && [ -f "$TRUST_DIR/Without-graph
             make -C "$tool_dir" -j$(nproc) 2>/dev/null && echo "  Preprocess tools OK" || echo "  Preprocess tools FAIL"
         fi
     done
-    # Restore exec bits on preprocess binaries (anonymous.4open.science zip
-    # serves files without the executable bit; re-adding here is a no-op on
-    # normal clones and a fix when extracted from the 4open zip endpoint).
+    # Restore exec bits on preprocess scripts. A no-op on normal git clones;
+    # a fix when the artifact was extracted from a zip/tarball archive, since
+    # such archives may not preserve the executable bit.
     chmod +x "$TRUST_DIR"/Preprocess/{compile.sh,fromDirectToUndirect,partition,preprocess} 2>/dev/null || true
 else
     echo "  SKIP (not found)"
