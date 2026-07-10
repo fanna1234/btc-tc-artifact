@@ -28,11 +28,23 @@ Reproducibility artifact for the SC '26 paper:
 - **Code:** <https://github.com/fanna1234/btc-tc-artifact>
 - **Archived:** Zenodo DOI — assigned at the 2026-08-25 artifact freeze (added here once minted)
 
-BTC-TC accelerates exact triangle counting on GPUs through format-operator-dispatch
-co-design around binary Tensor Cores (`m16n8k128.and.popc`). It evaluates
-$L \odot (LL^T)$ using a hybrid masked operator that dispatches each mask block
-by output density: dense blocks to Bit Tensor Cores, sparse blocks to a selective
-CUDA-core path.
+**Exact triangle counting on GPUs** — no sampling, no approximation. BTC-TC counts
+triangles as the masked sparse product **L ⊙ (LLᵀ)** (the lower-triangular adjacency
+times its transpose, masked back onto the edges), which reduces to a
+set-intersection-and-count over neighbor bit-vectors. It runs that intersection on
+**binary Tensor Cores**: the `m16n8k128.and.popc` instruction ANDs two 128-bit rows
+and popcounts the result, accumulating in int32 so **every count is exact** — on all
+36 benchmark graphs and across three GPU generations.
+
+Because each 128-bit intersection is exact and inexpensive, BTC-TC matches neighbor
+blocks **online inside the kernel** (sorted Bit-BSR + two-pointer), with no separate
+symbolic-preprocessing pass. Its core contribution is a **format–operator–dispatch
+co-design** for the highly non-uniform masked product (per-block density ranges
+0.1%–99%): dense blocks go to Bit Tensor Cores, sparse blocks to a selective
+CUDA-core path, with an O(1) per-graph tile-size choice on top. Across 36 SuiteSparse
+graphs BTC-TC is **exact on every dataset** and reaches a **1.92× geomean kernel** and
+**8.0× geomean end-to-end** speedup over the prior state of the art, consistently
+across three GPU generations (Ampere / Hopper / Blackwell; 108/108 exact).
 
 ## Quick Start
 
