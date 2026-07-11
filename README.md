@@ -60,9 +60,9 @@ bash scripts/run_all.sh --quick   # core claims only,   ~35 min
 bash scripts/run_all.sh --smoke   # build + correctness, ~15 min
 ```
 
-Total disk: ~8 GB (datasets 1.2 GB + build 5-6 GB). Total wall time on a single
-modern NVIDIA GPU (sm_80+): roughly 30 min for smoke, 45 min for quick, 3 h for
-full. `run_all.sh` is idempotent — rerunning resumes from the last failed step.
+Total disk: ~9 GB (datasets 3.2 GB extracted + build 5-6 GB). Total wall time on a
+single modern NVIDIA GPU (sm_80+): roughly 15 min for smoke, 35 min for quick, 3 h
+for full. `run_all.sh` is idempotent — rerunning resumes from the last failed step.
 
 ### Manual Step-by-Step (if `run_all.sh` has issues)
 
@@ -70,7 +70,7 @@ full. `run_all.sh` is idempotent — rerunning resumes from the last failed step
 # 1. Python deps (add --break-system-packages on Ubuntu 24.04+ for PEP 668)
 pip install -r requirements.txt
 
-# 2. Download 36 benchmark datasets (~1.2 GB)
+# 2. Download 36 benchmark datasets (~3.2 GB on disk)
 bash scripts/download_datasets.sh
 
 # 3. Build BTC-TC + baselines (~30-45 min, compiles GraphBLAS from source)
@@ -218,7 +218,7 @@ one-liner Python commands that compute speedups from the pre-computed CSVs.
 - Web graphs (eu-2005, web-Google, web-NotreDame)
 - Structural engineering (bcsstk series)
 
-Total download: ~1.2 GB. List: `data/paper_datasets.txt`.
+Datasets occupy ~3.2 GB on disk once extracted (the compressed downloads are smaller). List: `data/paper_datasets.txt`.
 
 ## Troubleshooting
 

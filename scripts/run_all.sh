@@ -73,7 +73,7 @@ fi
 
 # ---------- Step 2: Datasets ----------
 echo
-echo "$(ts) [2/5] Downloading datasets (~1.2 GB, skippable if present)..."
+echo "$(ts) [2/5] Downloading datasets (~3.2 GB on disk, skippable if present)..."
 NEEDED=$(awk 'NF && $1 !~ /^#/ {print $1}' data/paper_datasets.txt 2>/dev/null | wc -l)
 HAVE=$(ls data/*.mtx 2>/dev/null | wc -l)
 echo "  need=$NEEDED, have=$HAVE"
