@@ -9,7 +9,7 @@ BENCH_BIN="${ROOT_DIR}/build/apps/btc_blocksize_bench"
 RUNS="${RUNS:-5}"
 WARMUP="${WARMUP:-2}"
 
-mkdir -p "${OUT_DIR}/logs" "${OUT_DIR}/csv"
+mkdir -p "${OUT_DIR}/logs"
 
 if [[ ! -x "${BENCH_BIN}" ]]; then
   echo "[ERROR] Missing bench binary: ${BENCH_BIN}" >&2
@@ -73,7 +73,7 @@ done
 echo "[INFO] Parsing logs -> CSV + summary"
 python3 "${ROOT_DIR}/scripts/summarize_blocksize_bench_paper37.py" \
   --log-dir "${OUT_DIR}/logs" \
-  --out-csv "${OUT_DIR}/csv/blocksize_bench_paper37.csv" \
+  --out-csv "${OUT_DIR}/blocksize_bench_paper37.csv" \
   --out-summary "${OUT_DIR}/summary.txt"
 
 echo "[DONE] ${OUT_DIR}"
