@@ -5,9 +5,11 @@
 # Usage:
 #   bash scripts/download_datasets.sh
 #
-# Slow or restricted network? Fetch the pre-packaged mirror in one shot
-# (a single archive of all 36 .mtx files, e.g. the frozen Zenodo record):
-#   BTC_DATASETS_URL=<tarball-url> bash scripts/download_datasets.sh
+# Slow or restricted network (e.g. cannot reach sparse.tamu.edu)? Fetch the
+# frozen Zenodo mirror instead (DOI 10.5281/zenodo.21306210) — the script
+# downloads the split-part archive, reassembles it, verifies its SHA-256, and
+# extracts all 36 .mtx in one shot:
+#   BTC_DATASETS_MIRROR=1 bash scripts/download_datasets.sh
 #
 # Robustness: each download has an idle timeout (no infinite hangs on a
 # stalled connection), is retried, and is verified for integrity before it
@@ -62,18 +64,97 @@ get_targz() {
     return 1
 }
 
+# get_part <out> <url> : retry until a non-empty file lands. Split parts are NOT
+# individually valid gzip, so integrity is checked on the reassembled whole.
+get_part() {
+    local out="$1" url="$2" attempt
+    for attempt in $(seq 1 "$TRIES"); do
+        rm -f "$out"
+        if fetch "$url" "$out" 2>/dev/null && [ -s "$out" ]; then
+            return 0
+        fi
+        sleep 2
+    done
+    return 1
+}
+
+# sha256_of <file> : print the file's SHA-256 (portable across Linux/macOS).
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+    else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+
+# reassemble_parts <template-with-{PART}> <suffix-list> <out> : fetch each part
+# in order and concatenate into <out>.
+reassemble_parts() {
+    local tmpl="$1" suffixes="$2" out="$3" s url
+    : > "$out"
+    for s in $suffixes; do
+        url="${tmpl/\{PART\}/$s}"
+        echo "  [part $s] fetching..."
+        if get_part "$TMP/part.$s" "$url"; then
+            cat "$TMP/part.$s" >> "$out"; rm -f "$TMP/part.$s"
+        else
+            echo "ERROR: failed to fetch part '$s' from $url" >&2; return 1
+        fi
+    done
+    return 0
+}
+
 # ---------------------------------------------------------------------------
-# Mirror mode: one archive of all 36 .mtx files (for slow/restricted networks).
+# Mirror modes (for slow/restricted networks): fetch one bundle instead of 36.
+#
+#   BTC_DATASETS_MIRROR=1        Zenodo split-part mirror, DOI 10.5281/zenodo.21306210
+#                                (recommended; SHA-256 of the reassembled archive
+#                                is verified automatically).
+#   BTC_DATASETS_PARTS_URL=<t>   generic split parts; <t> is a URL template with a
+#                                {PART} placeholder. Suffixes = BTC_DATASETS_PARTS
+#                                (default "aa ab ac ad ae af ag ah").
+#   BTC_DATASETS_URL=<url>       a single .tar.gz archive.
 # ---------------------------------------------------------------------------
+ZENODO_DOI="10.5281/zenodo.21306210"
+ZENODO_PARTS_TMPL="https://zenodo.org/records/21306210/files/btc-tc-datasets.tar.gz.part-{PART}?download=1"
+ZENODO_PART_SUFFIXES="aa ab ac ad ae af ag ah"
+ZENODO_SHA256="7561713019a02173194eca44c6955cee0f860435f4efa9cc2f71b879cd8e2a5a"
+
+place_from_targz() {   # <tarball> : extract and copy every .mtx into data/
+    tar -xzf "$1" -C "$TMP/" || { echo "ERROR: could not extract archive" >&2; return 1; }
+    find "$TMP" -name '*.mtx' -exec cp -f {} "$DATA_DIR/" \;
+    echo "Done (mirror): $(ls "$DATA_DIR"/*.mtx 2>/dev/null | wc -l) .mtx files in $DATA_DIR/"
+}
+
+if [ -n "${BTC_DATASETS_MIRROR:-}" ] || [ -n "${BTC_DATASETS_PARTS_URL:-}" ]; then
+    if [ -n "${BTC_DATASETS_MIRROR:-}" ]; then
+        echo "Mirror mode: Zenodo split-part archive (DOI $ZENODO_DOI)"
+        tmpl="$ZENODO_PARTS_TMPL"; suffixes="$ZENODO_PART_SUFFIXES"; want="$ZENODO_SHA256"
+    else
+        echo "Mirror mode: split parts from BTC_DATASETS_PARTS_URL"
+        tmpl="$BTC_DATASETS_PARTS_URL"; suffixes="${BTC_DATASETS_PARTS:-aa ab ac ad ae af ag ah}"; want=""
+    fi
+    if ! reassemble_parts "$tmpl" "$suffixes" "$TMP/all.tar.gz"; then
+        echo "ERROR: could not reassemble split-part mirror" >&2; exit 1
+    fi
+    if [ -n "$want" ]; then
+        got=$(sha256_of "$TMP/all.tar.gz")
+        if [ "$got" != "$want" ]; then
+            echo "ERROR: reassembled archive SHA-256 mismatch" >&2
+            echo "  expected $want" >&2
+            echo "  got      $got" >&2
+            exit 1
+        fi
+        echo "  SHA-256 verified OK"
+    fi
+    gzip -t "$TMP/all.tar.gz" 2>/dev/null || { echo "ERROR: reassembled archive is a corrupt gzip" >&2; exit 1; }
+    place_from_targz "$TMP/all.tar.gz" && exit 0
+    exit 1
+fi
+
 if [ -n "${BTC_DATASETS_URL:-}" ]; then
-    echo "Mirror mode: fetching bundled dataset archive"
+    echo "Mirror mode: single archive"
     echo "  $BTC_DATASETS_URL"
     if get_targz "$TMP/all.tar.gz" "$BTC_DATASETS_URL"; then
-        tar -xzf "$TMP/all.tar.gz" -C "$TMP/"
-        # copy every .mtx found in the archive into data/
-        find "$TMP" -name '*.mtx' -exec cp -f {} "$DATA_DIR/" \;
-        echo "Done (mirror): $(ls "$DATA_DIR"/*.mtx 2>/dev/null | wc -l) .mtx files in $DATA_DIR/"
-        exit 0
+        place_from_targz "$TMP/all.tar.gz" && exit 0
+        exit 1
     else
         echo "ERROR: could not fetch mirror archive from BTC_DATASETS_URL" >&2
         exit 1
