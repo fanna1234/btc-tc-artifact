@@ -53,7 +53,7 @@ smoke test, and reproduction, in that order:
 
 ```bash
 # Before the first run, install OS packages (needs sudo):
-sudo apt-get install -y libnuma-dev libopenmpi-dev
+sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev
 
 bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
 bash scripts/run_all.sh --quick   # core claims only,   ~35 min
@@ -106,6 +106,7 @@ ALL PASSED
 | CMake | >= 3.18 | 3.28 |
 | Python | >= 3.10 | 3.12 |
 | libnuma-dev | required | (for vertex reordering) |
+| Boost (libboost-all-dev) | required | (rabbit_order reordering headers) |
 | MPI | optional | (only for TRUST baseline) |
 
 ## Claims and Verification
@@ -224,6 +225,7 @@ Total download: ~1.2 GB. List: `data/paper_datasets.txt`.
 | Problem | Solution |
 |---------|----------|
 | `numa.h: No such file` | Install `libnuma-dev`: `apt install libnuma-dev` |
+| `boost/algorithm/... No such file` | Install Boost: `apt install libboost-all-dev` |
 | `thrust::distance` error (ToT) | Already patched in this artifact for CUDA >= 13.2 |
 | TRUST build fails | Ensure MPI is installed: `apt install libopenmpi-dev` |
 | Some TC-Compare baselines fail | Non-critical; `build_all.sh` continues on failure |
