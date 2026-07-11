@@ -53,7 +53,7 @@ smoke test, and reproduction, in that order:
 
 ```bash
 # Before the first run, install OS packages (needs sudo):
-sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev
+sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev python3-pip
 
 bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
 bash scripts/run_all.sh --quick   # core claims only,   ~35 min
