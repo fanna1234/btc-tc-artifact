@@ -22,7 +22,7 @@ python3 scripts/bench_baselines.py --methods BTC_Lite --run-dir results-verify
 
 ---
 
-## Kernel Speedup (Section 4.2, Table III)
+## Kernel Speedup (Section 4.2, Table IV)
 
 **Claim**: BTC-TC achieves 1.92x geometric-mean kernel speedup over ToT on PRO 6000.
 
@@ -83,7 +83,7 @@ print(f'Hybrid dispatch GM speedup: {gm:.2f}x')
 
 ---
 
-## Cross-Device Consistency (Section 4.4, Fig 7)
+## Cross-Device Consistency (Section 4.4, Fig 8)
 
 **Claim**: BTC-TC is fastest E2E on all 36 datasets across 3 GPU generations.
 
@@ -162,8 +162,8 @@ bash scripts/regenerate_all_figures.sh
 | Figure | Script | Data Source |
 |--------|--------|-------------|
 | Fig 1 (teaser) | `generate_teaser_figure.py` | `results/pro6000/csv/` |
-| Fig 5 (per-dataset) | `generate_per_dataset_lines.py` | `results/pro6000/csv/` |
+| Fig 7 (per-dataset) | `generate_per_dataset_lines.py` | `results/pro6000/csv/` |
 | Fig 6 (tau sensitivity) | `generate_tau_e2e_combined_figure.py` | `results/tau_sweep/` |
-| Fig 7 (cross-device) | `generate_cross_device_box_figure.py` | `results/{pro6000,h100,a800}/csv/` |
+| Fig 8 (cross-device) | `generate_cross_device_box_figure.py` | `results/{pro6000,h100,a800}/csv/` |
 | Fig 9 (ablation 4-panel) | `generate_ablation_figure.py` | `results/ablation/csv/` + others |
 | Fig 10 (microarch) | `generate_microarch_profile_figure.py` | `results/ncu/` |
