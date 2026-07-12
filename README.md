@@ -53,7 +53,7 @@ smoke test, and reproduction, in that order:
 
 ```bash
 # Before the first run, install OS packages (needs sudo):
-sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev python3-pip
+sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev bc python3-pip
 
 bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
 bash scripts/run_all.sh --quick   # core claims only,   ~35 min
@@ -101,12 +101,14 @@ ALL PASSED
 | Component | Minimum | Tested |
 |-----------|---------|--------|
 | GPU | NVIDIA sm_80+ (Ampere/Hopper/Blackwell), >= 16 GB | A800 80GB, H100 80GB, PRO 6000 96GB |
-| CUDA Toolkit | >= 12.2 | 12.2, 13.1, 13.2 |
+| CUDA Toolkit | >= 12.2 (>= 12.8 for Blackwell sm_120) | 12.2, 13.1, 13.2 |
+| NVIDIA driver | >= 525 (CUDA 12) / >= 580 (CUDA 13.x) | 535, 590, 595 |
 | GCC | >= 11 | 13.3 |
-| CMake | >= 3.18 | 3.28 |
+| CMake | >= 3.22 | 3.28 |
 | Python | >= 3.10 | 3.12 |
 | libnuma-dev | required | (for vertex reordering) |
 | Boost (libboost-all-dev) | required | (rabbit_order reordering headers) |
+| bc | required | (timing arithmetic in run_ablation.sh) |
 | MPI | optional | (only for TRUST baseline) |
 
 ## Claims and Verification
@@ -120,8 +122,138 @@ exact command and expected output that verifies it. Key claims:
 | 1.92x GM kernel speedup vs ToT | 4.2 | `CLAIMS.md` "Kernel Speedup" |
 | 8.0x GM E2E speedup vs ToT | 4.2 | `CLAIMS.md` "E2E Speedup" |
 | Hybrid dispatch adds 1.45x | 4.6 | `run_ablation.sh` |
+| Block-size heuristic within 1.5x of optimal on all 36 | 3.4 | `CLAIMS.md` "Block-Size Heuristic" |
 | Consistent across 3 GPU generations | 4.4 | Pre-computed CSVs for 3 devices |
-| Threshold insensitive in [64, 2048] | 3.4 | `run_tau_sweep.sh` |
+| Default tau within 6% of optimal (8 graphs) | 3.4 | `run_tau_sweep.sh` |
+
+## Reproduce Each Figure & Table
+
+Every paper table and figure is reproduced by one command, mirroring the AE appendix.
+For each element: **Run** the measurement, read the **Expected** result, **Plot** the
+figure, and **Check** the number with a copy-paste one-liner. The checks read the
+**bundled** reference CSVs and print the stated value (point the reads at
+`results-reproduce/csv/` to check your own fresh run). Per-method CSV columns are
+`Dataset, Status, Triangles, Kernel_ms, E2E_after_clean_ms` — **correctness is the
+`Triangles` column vs. ground truth**, not `Status` (which is only process success).
+
+### Table IV — correctness, kernel & E2E speedup (master table)
+
+```bash
+# Run (all 36 graphs, ~3.4 min): writes results-reproduce/csv/{BTC_Lite,ToT,TRUST}.csv
+bash scripts/reproduce_paper.sh --quick
+```
+
+**Expected:** both methods complete (Run 36/36); exact triangle count vs. the CPU-exact
+**LAGraph** — **BTC-TC 36/36, ToT 24/36**; kernel geomean **1.92×**, E2E geomean **8.0×** over ToT.
+
+```bash
+# Check exactness against the independent CPU baseline LAGraph:
+python3 -c "import csv
+G=lambda m:{r['Dataset']:r['Triangles'] for r in csv.DictReader(open('results/pro6000/csv/'+m+'.csv'))}
+l=G('LAGraph')
+for m in ('BTC_Lite','ToT'): print(m, sum(G(m)[d]==l[d] for d in l),'/',len(l))"
+# -> BTC_Lite 36 / 36     ToT 24 / 36
+
+# Check kernel geomean speedup (swap Kernel_ms -> E2E_after_clean_ms for the 8.0 E2E ratio):
+python3 -c "import csv,math
+K=lambda m:{r['Dataset']:float(r['Kernel_ms']) for r in csv.DictReader(open('results/pro6000/csv/'+m+'.csv'))}
+b,t=K('BTC_Lite'),K('ToT'); d=[x for x in b if x in t]
+print(round(math.exp(sum(math.log(t[x]/b[x]) for x in d)/len(d)),2))"
+# -> 1.92
+```
+
+### Figure 1 — teaser scatter (all 13 methods)
+
+```bash
+python3 scripts/figures/generate_teaser_figure.py     # -> results/figures/ (teaser .pdf/.png)
+```
+
+**Expected:** BTC-TC sits alone at the fast + exact frontier. Uses bundled `results/pro6000/csv/` (no GPU).
+
+### Figure 6 — dispatch threshold (τ) sensitivity
+
+```bash
+bash scripts/run_tau_sweep.sh both                            # ~39 s -> results/tau_sweep/tau_sweep_128_clean.csv
+python3 scripts/figures/generate_tau_e2e_combined_figure.py   # -> results/figures/tau_e2e_combined.pdf
+```
+
+**Expected:** the default τ=512 (for 16×128; the 16×32 path uses τ=64) is within **6%** of the
+per-dataset optimal on all 8 swept graphs; only τ=0 (pure MMA) is catastrophic.
+
+### Figure 7 — per-dataset kernel time
+
+```bash
+python3 scripts/figures/generate_per_dataset_lines.py         # -> results/figures/fig_per_dataset_lines.pdf
+```
+
+**Expected:** BTC-TC leads on every dataset except 9 small graphs (both < 70 µs) where ToT wins;
+kernel geomean **1.92×**, peak per-dataset **13.2×** (g7jac140sc). Data: the `reproduce_paper.sh --quick`
+run above (BTC-TC, ToT, TRUST), or the bundled `results/pro6000/csv/`; the full 13-method ordering needs full mode.
+
+### Figure 8 — cross-device ordering (3 GPU generations)
+
+```bash
+python3 scripts/figures/generate_cross_device_box_figure.py   # -> results/figures/fig_cross_device_all.pdf
+```
+
+**Expected:** BTC-TC holds the best kernel & post-clean E2E geomean on Ampere/Hopper/Blackwell.
+Uses the bundled `results/{pro6000,h100,a800}/csv/` — **no GPU needed** to regenerate.
+
+```bash
+# Check: BTC-TC wins post-clean E2E on 36/36 datasets per device:
+python3 -c "import csv
+for dev in ('pro6000','h100','a800'):
+    T=lambda m:{r['Dataset']:float(r['E2E_after_clean_ms']) for r in csv.DictReader(open('results/'+dev+'/csv/'+m+'.csv'))}
+    b,t=T('BTC_Lite'),T('ToT'); d=[x for x in b if x in t]
+    print(dev, sum(b[x]<t[x] for x in d),'/',len(d))"
+# -> pro6000 36 / 36     h100 36 / 36     a800 36 / 36
+```
+
+### Figure 9 — design ablation (4 panels)
+
+```bash
+bash scripts/run_ablation.sh                            # ~3.2 min -> results/ablation/csv/
+bash scripts/run_blocksize_bench_paper37.sh             # block-granularity / MMA-shape bench (panels b,c)
+python3 scripts/figures/generate_ablation_figure.py     # -> results/figures/fig_ablation.pdf
+```
+
+**Expected:** (a) hybrid dispatch is **1.45×** (GM) over pure-TC (a CUDA-core-only path is 1.5×
+slower); (b) BTC-Lite stays within **1.5×** of the per-dataset optimal on all 36 (worst 1.50×,
+median 1.01×); (c) the 16×128 MMA shape wins on **35/36** over 8×128/16×256; (d) vertex reordering
+helps 6 graphs, hurts 30.
+
+```bash
+# Check (a) hybrid-dispatch contribution, filtered to the 36 paper graphs:
+python3 -c "import csv,math
+P=set(l.split()[0] for l in open('data/paper_datasets.txt') if l.strip())
+K=lambda f:{r['Dataset']:float(r['Kernel_ms']) for r in csv.DictReader(open('results/ablation/csv/'+f))}
+p,h=K('V3_16x128_PureTC.csv'),K('V5_16x128_Hybrid.csv'); d=[x for x in p if x in h and x in P]
+print(round(math.exp(sum(math.log(p[x]/h[x]) for x in d)/len(d)),2))"
+# -> 1.45
+
+# Check (b) heuristic within 1.5x of the per-dataset optimal on all 36:
+python3 -c "import csv,statistics as st
+K=lambda f:{r['Dataset']:float(r['Kernel_ms']) for r in csv.DictReader(open('results/pro6000/csv/'+f))}
+lite,f128,f32=K('BTC_Lite.csv'),K('BTC_16x128_Adaptive.csv'),K('BTC_16x32_Adaptive.csv')
+P=set(l.split()[0] for l in open('data/paper_datasets.txt') if l.strip())
+r=sorted(lite[x]/min(f128[x],f32[x]) for x in lite if x in f128 and x in f32 and x in P)
+print('within 1.5x: %d/%d ; worst %.3fx ; median %.3fx'%(sum(v<=1.5 for v in r),len(r),max(r),st.median(r)))"
+# -> within 1.5x: 36/36 ; worst 1.497x ; median 1.013x
+```
+
+### Figure 10 — microarchitectural profile (optional, explanatory)
+
+```bash
+python3 scripts/figures/generate_microarch_profile_figure.py  # -> results/figures/microarch_profile.pdf
+# To re-collect the BTC-TC/ToT rows yourself (needs ncu + admin counter access):
+#   sudo bash scripts/run_ncu_profile.sh
+```
+
+**Expected:** ToT's warp stalls (Σ51) are **3.6×** BTC-TC's (Σ14); ToT saturates L2 at 84–92% of
+peak vs. < 14% for BTC-TC; BTC-TC shows **2.3×** compute throughput and **2.9×** IPC. Bundled data:
+`results/ncu/` (4 methods × 8 graphs, incl. Si41Ge41H72) — no counter access needed to regenerate the figure.
+
+> All copy-paste checks also live, one per claim, in **[CLAIMS.md](CLAIMS.md)**.
 
 ## Artifact Evaluation (SC26)
 
