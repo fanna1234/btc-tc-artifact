@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build BTC-TC and ALL baselines from source.
 # Usage: bash scripts/build_all.sh
-# Prerequisites: CUDA >= 12.2, GCC >= 11, CMake >= 3.18, Boost (libboost-all-dev,
+# Prerequisites: CUDA >= 12.2 (>= 12.8 for Blackwell sm_120), GCC >= 11, CMake >= 3.22, Boost (libboost-all-dev,
 #   for the rabbit_order vertex-reordering headers), MPI (for TRUST)
 set -e
 cd "$(dirname "$0")/.."

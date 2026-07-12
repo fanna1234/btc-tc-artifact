@@ -35,7 +35,11 @@ echo "=========================================="
 echo
 echo "$(ts) [0/5] Checking OS dependencies..."
 MISSING=()
-for pkg_cmd in "libnuma-dev:numa.h:/usr/include/numa.h" "libopenmpi-dev:mpicc:$(command -v mpicc 2>/dev/null || echo '')"; do
+for pkg_cmd in \
+    "libnuma-dev:numa.h:/usr/include/numa.h" \
+    "libboost-all-dev:boost:/usr/include/boost/version.hpp" \
+    "bc:bc:$(command -v bc 2>/dev/null || echo '')" \
+    "libopenmpi-dev:mpicc:$(command -v mpicc 2>/dev/null || echo '')"; do
     IFS=: read -r pkg probe path <<< "$pkg_cmd"
     if [ -z "$path" ] || [ ! -e "$path" ]; then
         MISSING+=("$pkg")
@@ -45,11 +49,11 @@ if [ ${#MISSING[@]} -gt 0 ]; then
     echo "  [!] Missing OS packages: ${MISSING[*]}"
     echo "  [!] Install with:"
     echo "      sudo apt-get update && sudo apt-get install -y ${MISSING[*]}"
-    echo "  [!] (libopenmpi-dev is optional — only for TRUST baseline)"
+    echo "  [!] (libnuma-dev, libboost-all-dev, bc are required; libopenmpi-dev is optional — TRUST baseline only)"
     read -r -p "  Continue without them? (y/N) " ans
     [[ "$ans" =~ ^[Yy]$ ]] || { echo "  Aborted."; exit 1; }
 else
-    echo "  OK (libnuma-dev + libopenmpi-dev present)"
+    echo "  OK (libnuma-dev + libboost-all-dev + bc + libopenmpi-dev present)"
 fi
 
 # ---------- Step 1: Python deps ----------

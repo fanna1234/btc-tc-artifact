@@ -27,15 +27,15 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 
 # Prefer latest CUDA toolchain when available (avoids older NVCC defaults such as sm_52).
-# Try 13.1, 13.0, 12.9, 12.8 in order
-foreach(_cuda_ver "13.1" "13.0" "12.9" "12.8")
+# Try 13.3, 13.2 (paper toolkit), 13.1, 13.0, 12.9, 12.8 in order
+foreach(_cuda_ver "13.3" "13.2" "13.1" "13.0" "12.9" "12.8")
   if(NOT DEFINED CMAKE_CUDA_COMPILER AND EXISTS "/usr/local/cuda-${_cuda_ver}/bin/nvcc")
     set(CMAKE_CUDA_COMPILER "/usr/local/cuda-${_cuda_ver}/bin/nvcc" CACHE FILEPATH "CUDA compiler" FORCE)
     message(STATUS "Using CUDA ${_cuda_ver}")
     break()
   endif()
 endforeach()
-foreach(_cuda_ver "13.1" "13.0" "12.9" "12.8")
+foreach(_cuda_ver "13.3" "13.2" "13.1" "13.0" "12.9" "12.8")
   if(NOT DEFINED CUDAToolkit_ROOT AND EXISTS "/usr/local/cuda-${_cuda_ver}")
     set(CUDAToolkit_ROOT "/usr/local/cuda-${_cuda_ver}" CACHE PATH "CUDA toolkit root" FORCE)
     break()
