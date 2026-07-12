@@ -4,7 +4,9 @@
 [![SC26](https://img.shields.io/badge/SC26-accepted-2ea44f.svg)](https://sc26.supercomputing.org/)
 [![DOI](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](#citation)
 
-Reproducibility artifact for the SC '26 paper:
+> **Reproducibility artifact for the SC '26 paper.**<br>
+> A claim-indexed, end-to-end package for building, validating, and reproducing
+> the reported results.
 
 > Kaifan Jia, Yongchun Jiang, Zhihao Ling, Minghui Zhang, Xuran Wang, Ran Bao,
 > Haonan Zou, and Heng Zhang.
@@ -28,28 +30,51 @@ Reproducibility artifact for the SC '26 paper:
 - **Code:** <https://github.com/fanna1234/btc-tc-artifact>
 - **Archived:** Zenodo DOI — assigned at the 2026-08-25 artifact freeze (added here once minted)
 
-**Exact triangle counting on GPUs** — no sampling, no approximation. BTC-TC counts
-triangles as the masked sparse product **L ⊙ (LLᵀ)** (the lower-triangular adjacency
-times its transpose, masked back onto the edges), which reduces to a
-set-intersection-and-count over neighbor bit-vectors. It runs that intersection on
-**binary Tensor Cores**: the `m16n8k128.and.popc` instruction ANDs two 128-bit rows
-and popcounts the result, accumulating in int32 so **every count is exact** — on all
-36 benchmark graphs and across three GPU generations.
+## Contents
 
-Because each 128-bit intersection is exact and inexpensive, BTC-TC matches neighbor
-blocks **online inside the kernel** (sorted Bit-BSR + two-pointer), with no separate
-symbolic-preprocessing pass. Its core contribution is a **format–operator–dispatch
-co-design** for the highly non-uniform masked product (per-block density ranges
-0.1%–99%): dense blocks go to Bit Tensor Cores, sparse blocks to a selective
-CUDA-core path, with an O(1) per-graph tile-size choice on top. Across 36 SuiteSparse
-graphs BTC-TC is **exact on every dataset** and reaches a **1.92× geomean kernel** and
-**8.0× geomean end-to-end** speedup over the prior state of the art, consistently
-across three GPU generations (Ampere / Hopper / Blackwell; 108/108 exact).
+- [TL;DR](#tldr)
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Claims and Verification](#claims-and-verification)
+- [Reproduce Each Figure & Table](#reproduce-each-figure--table)
+- [Artifact Evaluation](#artifact-evaluation)
+- [Repository Map](#repository-map)
+- [Building](#building)
+- [Reproduction Pipeline](#reproduction-pipeline)
+- [Datasets](#datasets)
+- [Troubleshooting](#troubleshooting)
+- [Citation](#citation)
+- [License](#license)
+
+---
+
+## TL;DR
+
+**Exact triangle counting on GPUs, with no sampling or approximation.** BTC-TC
+expresses triangle counting as the masked sparse product **L ⊙ (LLᵀ)** (the
+lower-triangular adjacency times its transpose, masked back onto the edges). This
+formulation reduces to set-intersection-and-count over neighbor bit-vectors. BTC-TC
+executes the intersection on **binary Tensor Cores**: the `m16n8k128.and.popc`
+instruction ANDs two 128-bit rows and popcounts the result, accumulating in int32 so
+**every count is exact** — on all 36 benchmark graphs and across three GPU
+generations.
+
+BTC-TC exploits these exact, inexpensive 128-bit intersections to match neighbor
+blocks **online inside the kernel** (sorted Bit-BSR + two-pointer), eliminating a
+separate symbolic-preprocessing pass. The central contribution is a
+**format–operator–dispatch co-design** for the highly non-uniform masked product
+(per-block density ranges 0.1%–99%): dense blocks execute on Bit Tensor Cores,
+sparse blocks use a selective CUDA-core path, and an O(1) policy selects the
+per-graph tile size. Across 36 SuiteSparse graphs BTC-TC is **exact on every
+dataset** and reaches a **1.92× geomean kernel** and **8.0× geomean end-to-end**
+speedup over the prior state of the art, consistently across three GPU generations
+(Ampere / Hopper / Blackwell; 108/108 exact).
 
 ## Quick Start
 
-**One command from scratch** — handles OS/Python deps, dataset download, build,
-smoke test, and reproduction, in that order:
+The driver below executes the complete workflow in order: system and Python
+dependencies, dataset acquisition, compilation, smoke testing, and result
+reproduction.
 
 ```bash
 # Before the first run, install OS packages (needs sudo):
@@ -64,7 +89,10 @@ Total disk: ~9 GB (datasets 3.2 GB extracted + build 5-6 GB). Total wall time on
 single modern NVIDIA GPU (sm_80+): roughly 15 min for smoke, 35 min for quick, 3 h
 for full. `run_all.sh` is idempotent — rerunning resumes from the last failed step.
 
-### Manual Step-by-Step (if `run_all.sh` has issues)
+### Manual Fallback
+
+If `run_all.sh` encounters an environment-specific issue, execute the same stages
+individually:
 
 ```bash
 # 1. Python deps (add --break-system-packages on Ubuntu 24.04+ for PEP 668)
@@ -83,7 +111,7 @@ bash scripts/smoke_test.sh
 bash scripts/reproduce_paper.sh
 ```
 
-### Expected Output (smoke test)
+### Reference Smoke-Test Output
 
 ```
 === BTC-TC Smoke Test ===
@@ -97,6 +125,9 @@ ALL PASSED
 ```
 
 ## Requirements
+
+The following matrix distinguishes the minimum supported environment from the
+configurations used to validate the artifact.
 
 | Component | Minimum | Tested |
 |-----------|---------|--------|
@@ -113,8 +144,9 @@ ALL PASSED
 
 ## Claims and Verification
 
-See **[CLAIMS.md](CLAIMS.md)** for a detailed mapping of each paper claim to the
-exact command and expected output that verifies it. Key claims:
+**[CLAIMS.md](CLAIMS.md)** provides the complete claim-to-evidence contract: each
+paper claim is paired with the exact verification command and expected output. The
+principal claims are summarized below.
 
 | Claim | Section | Verification |
 |-------|---------|--------------|
@@ -255,10 +287,12 @@ peak vs. < 14% for BTC-TC; BTC-TC shows **2.3×** compute throughput and **2.9×
 
 > All copy-paste checks also live, one per claim, in **[CLAIMS.md](CLAIMS.md)**.
 
-## Artifact Evaluation (SC26)
+## Artifact Evaluation
 
-This artifact targets the SC26 reproducibility badges below. Each row lists the single
-check a reviewer can run to grant it:
+<a id="artifact-evaluation"></a>
+
+This artifact targets the SC26 reproducibility badges below. Each badge is paired
+with a direct reviewer-facing verification path:
 
 | Badge | How a reviewer verifies it |
 |-------|----------------------------|
@@ -269,7 +303,10 @@ check a reviewer can run to grant it:
 Every paper claim is mapped to its exact command and expected value in
 **[CLAIMS.md](CLAIMS.md)**.
 
-## Directory Structure
+## Repository Map
+
+The repository separates the implementation, experiment drivers, reference data,
+and verification documentation as follows.
 
 ```
 btc-tc-artifact/
@@ -305,6 +342,8 @@ btc-tc-artifact/
 
 ## Building
 
+Use the complete build for paper-level reproduction and baseline comparisons.
+
 ```bash
 # Recommended: build everything (BTC-TC + all baselines)
 bash scripts/build_all.sh
@@ -316,13 +355,14 @@ make -j$(nproc)
 ```
 
 To build only BTC-TC (skip baselines):
+
 ```bash
 cmake .. -DBTC_BUILD_BASELINES=OFF && make -j$(nproc)
 ```
 
 ## Reproduction Pipeline
 
-`reproduce_paper.sh` runs the complete pipeline:
+`reproduce_paper.sh` executes the complete pipeline in the following order:
 
 1. **Smoke test** — correctness verification on 3 small graphs
 2. **Full benchmark** — all methods x 36 datasets (5 runs each)
@@ -331,7 +371,7 @@ cmake .. -DBTC_BUILD_BASELINES=OFF && make -j$(nproc)
 5. **Sensitivity sweeps** — threshold (tau) and E2E breakdown
 6. **Figure generation** — all paper figures from result CSVs
 
-### Verifying Without Re-running
+### Verification Without Re-running
 
 Pre-computed results from 3 GPU platforms are included in `results/`. To regenerate
 figures directly from these results:
@@ -345,6 +385,7 @@ one-liner Python commands that compute speedups from the pre-computed CSVs.
 ## Datasets
 
 36 graphs from [SuiteSparse Matrix Collection](https://sparse.tamu.edu), covering:
+
 - Scientific computing meshes (FEM, molecular dynamics: cant, consph, Si41Ge41H72)
 - Social / citation networks (wiki-Vote)
 - Web graphs (eu-2005, web-NotreDame, webbase-1M)
@@ -353,6 +394,8 @@ one-liner Python commands that compute speedups from the pre-computed CSVs.
 Datasets occupy ~3.2 GB on disk once extracted (the compressed downloads are smaller). List: `data/paper_datasets.txt`.
 
 ## Troubleshooting
+
+The following remedies cover the most common dependency and toolchain failures.
 
 | Problem | Solution |
 |---------|----------|
@@ -365,7 +408,7 @@ Datasets occupy ~3.2 GB on disk once extracted (the compressed downloads are sma
 
 ## Citation
 
-If you use BTC-TC in your research, please cite:
+Please cite the paper when using BTC-TC in research:
 
 ```bibtex
 @inproceedings{jia2026btctc,
