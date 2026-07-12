@@ -9,16 +9,20 @@ a completed build (`bash scripts/build_all.sh`).
 **Claim**: BTC-TC produces exact triangle counts on all 36 datasets across 3 GPU platforms.
 
 ```bash
-# Quick verification (3 datasets, <1 min):
+# Quick verification (3 datasets, <1 min): compares counts to expected
 bash scripts/smoke_test.sh
 # Expected: 3/3 PASS for BTC-TC, 2/2 PASS for ToT
 
-# Full verification (36 datasets):
-python3 scripts/bench_baselines.py --methods BTC_Lite --run-dir results-verify
-# Expected: all 36 datasets show Status=OK, counts match ground truth
+# Full 36-dataset exactness vs the independent CPU baseline LAGraph.
+# NOTE: the Status column is only process success; correctness is the Triangles column.
+python3 -c "import csv
+G=lambda m:{r['Dataset']:r['Triangles'] for r in csv.DictReader(open('results/pro6000/csv/'+m+'.csv'))}
+l=G('LAGraph')
+for m in ('BTC_Lite','ToT'): print(m, sum(G(m)[d]==l[d] for d in l),'/',len(l))"
+# Expected: BTC_Lite 36 / 36 (exact),  ToT 24 / 36 (12 FP16 failures)
 ```
 
-**Pre-computed evidence**: `results/pro6000/csv/BTC_Lite.csv` — all 36 rows have `Status=OK`.
+**Pre-computed evidence**: `results/pro6000/csv/BTC_Lite.csv` `Triangles` matches the CPU-exact `LAGraph.csv` on 36/36; `ToT.csv` on 24/36.
 
 ---
 
@@ -115,9 +119,23 @@ bash scripts/run_tau_sweep.sh both
 
 ---
 
+## Block-Size Heuristic (Section 3.4, Fig 9b)
+
+**Claim**: BTC-Lite's O(1) heuristic stays within 1.5x of the per-dataset optimal on all 36 graphs (and tracks the faster fixed block size on the majority).
+
+```bash
+python3 -c "import csv
+K=lambda f:{r['Dataset']:float(r['Kernel_ms']) for r in csv.DictReader(open('results/pro6000/csv/'+f))}
+lite,f128,f32=K('BTC_Lite.csv'),K('BTC_16x128_Adaptive.csv'),K('BTC_16x32_Adaptive.csv')
+P=set(l.split()[0] for l in open('data/paper_datasets.txt') if l.strip())
+d=[x for x in lite if x in f128 and x in f32 and x in P]
+print('worst lite/optimal = %.3fx over %d graphs' % (max(lite[x]/min(f128[x],f32[x]) for x in d), len(d)))"
+# Expected: worst lite/optimal = 1.497x over 36 graphs (within 1.5x)
+```
+
 ## MMA Shape Selection (Section 4.6, Fig 9c)
 
-**Claim**: BTC-Lite's heuristic matches per-dataset optimal on 22/36 graphs.
+**Claim**: the 16x128 MMA shape wins on 35/36 graphs over 8x128 and 16x256.
 
 ```bash
 # Reproduce:

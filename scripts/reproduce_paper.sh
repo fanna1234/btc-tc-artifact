@@ -78,11 +78,14 @@ if btc is None:
     print('  WARNING: BTC_Lite.csv not found')
     sys.exit(0)
 
-# Correctness
-btc_correct = len(btc)
-print(f'  Correctness: BTC-TC {btc_correct}/36 datasets correct')
+# Correctness: Status = process success (Run); Exact = Triangles vs the exact TC method (BTC-TC)
+print(f'  Run (completed): BTC-TC {len(btc)}/36')
 if tot is not None:
-    tot_correct = len(tot[tot['Status']=='OK']) if 'Status' in tot.columns else 0
+    _m = btc.merge(tot, on='Dataset', suffixes=('_btc','_tot'))
+    _exact = int((_m['Triangles_btc'].astype(str) == _m['Triangles_tot'].astype(str)).sum())
+    print(f'  Run (completed): ToT {len(tot)}/36')
+    print(f'  Exact triangle match vs BTC-TC: ToT {_exact}/{len(_m)} '
+          f'(BTC-TC is exact; cross-check vs CPU LAGraph via CLAIMS.md)')
 
 # Kernel speedup
 if tot is not None:
@@ -100,8 +103,8 @@ print('  Verification complete.')
 "
 echo ""
 
-# Step 4: Ablation experiments (Fig 8)
-echo "[Step 4] Running ablation experiments (Fig 8)..."
+# Step 4: Ablation experiments (Fig 9)
+echo "[Step 4] Running ablation experiments (Fig 9)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_ablation.sh 2>&1 | grep -E "^=|OK|FAIL|Saved" | tail -10
 else
@@ -109,8 +112,8 @@ else
 fi
 echo ""
 
-# Step 5: Block-size and reorder experiments (Fig 8)
-echo "[Step 5] Running block-size bench + reorder compare (Fig 8)..."
+# Step 5: Block-size and reorder experiments (Fig 9)
+echo "[Step 5] Running block-size bench + reorder compare (Fig 9)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_blocksize_bench_paper37.sh 2>&1 | tail -5
     bash scripts/run_reorder_compare.sh 2>&1 | tail -5
@@ -119,8 +122,8 @@ else
 fi
 echo ""
 
-# Step 6: Tau sensitivity sweep + E2E breakdown (Fig 9)
-echo "[Step 6] Running tau sweep + E2E breakdown (Fig 9)..."
+# Step 6: Tau sensitivity sweep + E2E breakdown (Fig 6)
+echo "[Step 6] Running tau sweep + E2E breakdown (Fig 6)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_tau_sweep.sh both 2>&1 | tail -5
     bash scripts/run_e2e_breakdown.sh 2>&1 | tail -5
