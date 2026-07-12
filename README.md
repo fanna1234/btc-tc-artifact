@@ -345,10 +345,10 @@ one-liner Python commands that compute speedups from the pre-computed CSVs.
 ## Datasets
 
 36 graphs from [SuiteSparse Matrix Collection](https://sparse.tamu.edu), covering:
-- Scientific computing meshes (FEM, molecular dynamics)
-- Social networks (wiki-Vote, flickr)
-- Web graphs (eu-2005, web-Google, web-NotreDame)
-- Structural engineering (bcsstk series)
+- Scientific computing meshes (FEM, molecular dynamics: cant, consph, Si41Ge41H72)
+- Social / citation networks (wiki-Vote)
+- Web graphs (eu-2005, web-NotreDame, webbase-1M)
+- Structural engineering (bcsstk / pcrystk / pkustk series)
 
 Datasets occupy ~3.2 GB on disk once extracted (the compressed downloads are smaller). List: `data/paper_datasets.txt`.
 
