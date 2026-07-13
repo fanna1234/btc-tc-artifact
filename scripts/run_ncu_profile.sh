@@ -27,8 +27,12 @@ if ! command -v ncu >/dev/null 2>&1; then
     exit 1
 fi
 
-# Auto-detect GPU tag from nvidia-smi
-TAG=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 | tr ' ' '_' | tr -d '()' | tr '[:upper:]' '[:lower:]')
+# Auto-detect GPU tag from nvidia-smi (SIGPIPE-safe: capture the full output
+# first, then take line 1 via parameter expansion -- piping straight into
+# `head -1` makes nvidia-smi SIGPIPE on a multi-GPU host, and under
+# `set -e -o pipefail` that silently kills the script before profiling).
+_gpu_names=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null)
+TAG=$(printf '%s' "${_gpu_names%%$'\n'*}" | tr ' ' '_' | tr -d '()' | tr '[:upper:]' '[:lower:]')
 [ -z "$TAG" ] && TAG="gpu"
 
 OUT_DIR="results/ncu"
