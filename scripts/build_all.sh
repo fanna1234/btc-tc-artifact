@@ -1,7 +1,8 @@
 #!/bin/bash
 # Build BTC-TC and ALL baselines from source.
 # Usage: bash scripts/build_all.sh
-# Prerequisites: CUDA >= 12.1 (>= 12.8 for Blackwell sm_120), GCC >= 11, CMake >= 3.22, Boost (libboost-all-dev,
+# Prerequisites: CUDA >= 12.1 (>= 12.8 for Blackwell sm_120), GCC >= 11 (g++-12 preferred
+#   for the TC-Compare baselines; auto-detected below), CMake >= 3.22, Boost (libboost-all-dev,
 #   for the rabbit_order vertex-reordering headers), MPI (for TRUST)
 set -e
 cd "$(dirname "$0")/.."
@@ -49,15 +50,28 @@ if [ -d "$TRICORE_DIR" ]; then
     fi
 fi
 
+# Pick a host C++ compiler nvcc accepts. The Makefiles default to g++-12; CUDA 12.x
+# also accepts gcc 13, while CUDA >=13 requires gcc <=12. Prefer g++-12, else fall back
+# to whatever is installed so a reviewer isn't forced to match an exact compiler.
+BL_HOST_CXX=""
+for _c in g++-12 g++-13 g++-11 g++; do
+    command -v "$_c" >/dev/null 2>&1 && { BL_HOST_CXX="$_c"; break; }
+done
+
 for method_dir in "$TC_DIR"/*/; do
     name=$(basename "$method_dir")
     [ "$name" = "tricore" ] && continue  # build Tricore separately below
     if [ -f "$method_dir/Makefile" ]; then
         echo -n "  $name... "
-        if make -C "$method_dir" -j$(nproc) 2>/dev/null; then
+        # Some methods (e.g. Green) write objects into bin/ofiles/ without creating it.
+        mkdir -p "$method_dir/bin/ofiles" 2>/dev/null
+        # Build from source against THIS host's toolkit (prebuilt binaries are no longer
+        # shipped, so make always compiles fresh -> no stale CUDA-runtime mismatch).
+        if make -C "$method_dir" HOST_CXX="$BL_HOST_CXX" -j$(nproc) >"/tmp/build_${name}.log" 2>&1; then
             echo "OK"
         else
-            echo "FAIL (non-critical)"
+            echo "FAIL (non-critical; see /tmp/build_${name}.log)"
+            tail -3 "/tmp/build_${name}.log" | sed 's/^/      /'
         fi
     fi
 done

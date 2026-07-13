@@ -78,7 +78,7 @@ reproduction.
 
 ```bash
 # Before the first run, install OS packages (needs sudo):
-sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev bc python3-pip
+sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev bc python3-pip g++-12
 
 bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
 bash scripts/run_all.sh --quick   # core claims only,   ~35 min

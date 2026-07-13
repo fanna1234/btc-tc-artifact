@@ -8,3 +8,14 @@ __pycache__/
 *.bin
 *.pyc
 .cache/
+
+# Compiled baseline binaries — always build from source (never ship prebuilt;
+# a committed binary can carry a CUDA runtime the reviewer's driver rejects).
+baselines/TC-Compare/approach/Bisson/bisson
+baselines/TC-Compare/approach/Fox/fox
+baselines/TC-Compare/approach/Hu/hu
+baselines/TC-Compare/approach/GroupTC/grouptc
+baselines/TC-Compare/approach/H-INDEX/hindex
+baselines/TC-Compare/approach/polak/polak
+baselines/TC-Compare/approach/tricore/tricore
+baselines/TC-Compare/approach/*/bin/ofiles/
