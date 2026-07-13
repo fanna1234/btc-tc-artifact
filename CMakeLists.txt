@@ -28,19 +28,37 @@ endif()
 
 # Prefer latest CUDA toolchain when available (avoids older NVCC defaults such as sm_52).
 # Try 13.3, 13.2 (paper toolkit), 13.1, 13.0, 12.9, 12.8 in order
-foreach(_cuda_ver "13.3" "13.2" "13.1" "13.0" "12.9" "12.8")
+# Adaptive: probe versioned toolkits newest-first, then the generic /usr/local/cuda
+# symlink, then any nvcc on PATH. Supports CUDA 12.1 through 13.3+ so a reviewer with
+# 12.x (e.g. Chameleon's CC-Ubuntu-CUDA = 12.6) builds without hand-setting a path.
+set(_btc_cuda_vers "13.3" "13.2" "13.1" "13.0" "12.9" "12.8" "12.6" "12.5" "12.4" "12.3" "12.2" "12.1")
+foreach(_cuda_ver ${_btc_cuda_vers})
   if(NOT DEFINED CMAKE_CUDA_COMPILER AND EXISTS "/usr/local/cuda-${_cuda_ver}/bin/nvcc")
     set(CMAKE_CUDA_COMPILER "/usr/local/cuda-${_cuda_ver}/bin/nvcc" CACHE FILEPATH "CUDA compiler" FORCE)
     message(STATUS "Using CUDA ${_cuda_ver}")
     break()
   endif()
 endforeach()
-foreach(_cuda_ver "13.3" "13.2" "13.1" "13.0" "12.9" "12.8")
+if(NOT DEFINED CMAKE_CUDA_COMPILER AND EXISTS "/usr/local/cuda/bin/nvcc")
+  set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc" CACHE FILEPATH "CUDA compiler" FORCE)
+  message(STATUS "Using CUDA at /usr/local/cuda (generic symlink)")
+endif()
+if(NOT DEFINED CMAKE_CUDA_COMPILER)
+  find_program(_BTC_NVCC nvcc)
+  if(_BTC_NVCC)
+    set(CMAKE_CUDA_COMPILER "${_BTC_NVCC}" CACHE FILEPATH "CUDA compiler" FORCE)
+    message(STATUS "Using nvcc from PATH: ${_BTC_NVCC}")
+  endif()
+endif()
+foreach(_cuda_ver ${_btc_cuda_vers})
   if(NOT DEFINED CUDAToolkit_ROOT AND EXISTS "/usr/local/cuda-${_cuda_ver}")
     set(CUDAToolkit_ROOT "/usr/local/cuda-${_cuda_ver}" CACHE PATH "CUDA toolkit root" FORCE)
     break()
   endif()
 endforeach()
+if(NOT DEFINED CUDAToolkit_ROOT AND EXISTS "/usr/local/cuda")
+  set(CUDAToolkit_ROOT "/usr/local/cuda" CACHE PATH "CUDA toolkit root" FORCE)
+endif()
 
 # CMake's CUDA compiler identification step may invoke NVCC without an explicit
 # GPU arch, and some toolchains default to deprecated targets (e.g. sm_52),

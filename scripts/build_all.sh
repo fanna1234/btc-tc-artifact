@@ -1,11 +1,17 @@
 #!/bin/bash
 # Build BTC-TC and ALL baselines from source.
 # Usage: bash scripts/build_all.sh
-# Prerequisites: CUDA >= 12.2 (>= 12.8 for Blackwell sm_120), GCC >= 11, CMake >= 3.22, Boost (libboost-all-dev,
+# Prerequisites: CUDA >= 12.1 (>= 12.8 for Blackwell sm_120), GCC >= 11, CMake >= 3.22, Boost (libboost-all-dev,
 #   for the rabbit_order vertex-reordering headers), MPI (for TRUST)
 set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
+
+# Ensure nvcc is reachable even from a non-login shell (some images, e.g. Chameleon's
+# CC-Ubuntu-CUDA, keep CUDA off the default PATH). Harmless if nvcc is already found.
+if ! command -v nvcc >/dev/null 2>&1 && [ -x /usr/local/cuda/bin/nvcc ]; then
+    export PATH=/usr/local/cuda/bin:$PATH
+fi
 
 echo "============================================"
 echo "  BTC-TC Full Build"
