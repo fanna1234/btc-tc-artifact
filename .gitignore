@@ -22,3 +22,4 @@ baselines/TC-Compare/approach/*/bin/ofiles/
 baselines/TC-Compare/approach/Green/green
 nohup.out
 *.out
+baselines/TC-Compare/approach/TRUST/trust
