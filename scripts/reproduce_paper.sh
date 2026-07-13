@@ -42,17 +42,21 @@ echo "[Step 2] Running benchmark..."
 RESULT_DIR="results-reproduce"
 mkdir -p "$RESULT_DIR/csv"
 
+BENCH_RC=0
 if [ "$QUICK" -eq 1 ]; then
     echo "  Quick mode: BTC-TC + ToT + TRUST only"
     python3 scripts/bench_baselines.py \
         --methods BTC_Lite,BTC_16x128_Adaptive,BTC_16x32_Adaptive,ToT,TRUST \
-        --run-dir "$RESULT_DIR" 2>&1 | tail -20
+        --run-dir "$RESULT_DIR" 2>&1 | tee "$RESULT_DIR/bench.log"
+    BENCH_RC=${PIPESTATUS[0]}
 else
     echo "  Full mode: all 13 baselines"
     python3 scripts/bench_baselines.py \
         --suite all \
-        --run-dir "$RESULT_DIR" 2>&1 | tail -20
+        --run-dir "$RESULT_DIR" 2>&1 | tee "$RESULT_DIR/bench.log"
+    BENCH_RC=${PIPESTATUS[0]}
 fi
+[ "$BENCH_RC" -ne 0 ] && echo "  [!] benchmark reported missing/failed results (exit $BENCH_RC) — see the coverage summary above"
 echo ""
 
 # Step 3: Verify key claims
@@ -62,8 +66,8 @@ import pandas as pd, numpy as np, sys, os
 
 result_dir = '$RESULT_DIR/csv'
 if not os.path.isdir(result_dir):
-    print('  WARNING: result dir not found, skipping verification')
-    sys.exit(0)
+    print('  ERROR: result dir not found — the benchmark produced no output')
+    sys.exit(1)
 
 def load(method):
     p = os.path.join(result_dir, f'{method}.csv')
@@ -74,12 +78,15 @@ def load(method):
 btc = load('BTC_Lite')
 tot = load('ToT')
 
-if btc is None:
-    print('  WARNING: BTC_Lite.csv not found')
-    sys.exit(0)
+if btc is None or len(btc) == 0:
+    print('  ERROR: BTC_Lite results missing/empty — the core method did not run')
+    sys.exit(1)
 
 # Correctness: Status = process success (Run); Exact = Triangles vs the exact TC method (BTC-TC)
 print(f'  Run (completed): BTC-TC {len(btc)}/36')
+if len(btc) < 36:
+    print(f'  ERROR: BTC-TC covered only {len(btc)}/36 datasets (expected 36) — reproduction incomplete')
+    sys.exit(1)
 if tot is not None:
     _m = btc.merge(tot, on='Dataset', suffixes=('_btc','_tot'))
     _exact = int((_m['Triangles_btc'].astype(str) == _m['Triangles_tot'].astype(str)).sum())
@@ -101,6 +108,7 @@ if tot is not None:
 
 print('  Verification complete.')
 "
+VERIFY_RC=$?
 echo ""
 
 # Step 4: Ablation experiments (Fig 9)
@@ -139,6 +147,13 @@ bash scripts/regenerate_all_figures.sh 2>&1 | grep -E "^\[|Done|Error"
 echo ""
 
 echo "============================================"
+if [ "${VERIFY_RC:-0}" -ne 0 ] || [ "${BENCH_RC:-0}" -ne 0 ]; then
+    echo "  Reproduction INCOMPLETE — core verification or benchmark reported failures"
+    echo "  (verification rc=${VERIFY_RC:-0}, benchmark rc=${BENCH_RC:-0}); see errors/summary above"
+    echo "  Results: $RESULT_DIR/   Figures: results/figures/"
+    echo "============================================"
+    exit 1
+fi
 echo "  Reproduction complete!"
 echo "  Results: $RESULT_DIR/"
 echo "  Figures: results/figures/"

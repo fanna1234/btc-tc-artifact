@@ -50,8 +50,13 @@ if [ ${#MISSING[@]} -gt 0 ]; then
     echo "  [!] Install with:"
     echo "      sudo apt-get update && sudo apt-get install -y ${MISSING[*]}"
     echo "  [!] (libnuma-dev, libboost-all-dev, bc are required; libopenmpi-dev is optional — TRUST baseline only)"
-    read -r -p "  Continue without them? (y/N) " ans
-    [[ "$ans" =~ ^[Yy]$ ]] || { echo "  Aborted."; exit 1; }
+    if [ -t 0 ]; then
+        read -r -p "  Continue without them? (y/N) " ans
+        [[ "$ans" =~ ^[Yy]$ ]] || { echo "  Aborted."; exit 1; }
+    else
+        echo "  Non-interactive shell: install the packages above, then re-run. Aborting."
+        exit 1
+    fi
 else
     echo "  OK (libnuma-dev + libboost-all-dev + bc + libopenmpi-dev present)"
 fi
@@ -62,9 +67,9 @@ echo "$(ts) [1/5] Installing Python dependencies..."
 if python3 -c "import matplotlib, pandas, numpy" >/dev/null 2>&1; then
     echo "  OK (already installed)"
 else
-    if pip install -q -r requirements.txt >/dev/null 2>&1; then
+    if python3 -m pip install -q -r requirements.txt >/dev/null 2>&1; then
         echo "  OK (installed via pip)"
-    elif pip install -q --break-system-packages -r requirements.txt >/dev/null 2>&1; then
+    elif python3 -m pip install -q --break-system-packages -r requirements.txt >/dev/null 2>&1; then
         echo "  OK (installed via pip --break-system-packages, PEP 668 bypass)"
     else
         echo "  [!] pip install failed. Try manually:"
@@ -115,10 +120,10 @@ fi
 echo
 if [ "$MODE" = "quick" ]; then
     echo "$(ts) [5/5] Quick reproduction (BTC + ToT + TRUST, ~15 min)..."
-    bash scripts/reproduce_paper.sh --quick
+    bash scripts/reproduce_paper.sh --quick || { echo "  [!] reproduction reported failures (see above) — NOT complete"; exit 1; }
 else
     echo "$(ts) [5/5] Full reproduction (all 15 methods x 36 datasets, ~1-1.5 h)..."
-    bash scripts/reproduce_paper.sh
+    bash scripts/reproduce_paper.sh || { echo "  [!] reproduction reported failures (see above) — NOT complete"; exit 1; }
 fi
 
 echo

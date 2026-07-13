@@ -877,8 +877,49 @@ def main() -> int:
     if failures_root.exists() and not any(failures_root.iterdir()):
         failures_root.rmdir()
 
-    print(f"Done. CSVs under: {run_dir / 'csv'}")
-    return 0
+    # ---- Coverage summary + exit code -------------------------------------------------
+    # A silent success here is how a broken run (e.g. baseline binaries linked against a
+    # CUDA the driver rejects, so every row CRASHes) can still look "Done". Print a
+    # per-method OK-count and fail the process when results are missing:
+    #   * a core BTC method that did not cover every dataset, or
+    #   * any requested method that produced ZERO successful rows (a total collapse).
+    # A partial baseline shortfall (e.g. one crash/timeout on a huge graph) is reported
+    # but NOT fatal.
+    import csv as _csv
+    csv_dir = run_dir / "csv"
+    n_ds = len(ds)
+    core = set(BTC_METHODS)
+    print("\n=== Coverage summary (OK rows / datasets) ===")
+    incomplete_core: list[tuple[str, int]] = []
+    collapsed: list[str] = []
+    for m in methods:
+        p = csv_dir / f"{m}.csv"
+        ok = 0
+        if p.exists():
+            with open(p, newline="") as fh:
+                for row in _csv.DictReader(fh):
+                    if (row.get("Status") or "").strip().upper() == "OK":
+                        ok += 1
+        flag = ""
+        if ok == 0:
+            collapsed.append(m); flag = "  <-- 0 OK (broken?)"
+        elif m in core and ok < n_ds:
+            incomplete_core.append((m, ok)); flag = "  <-- CORE incomplete"
+        elif ok < n_ds:
+            flag = f"  (partial: {n_ds - ok} missing)"
+        print(f"  {m:24s} {ok:3d}/{n_ds}{flag}")
+
+    print(f"\nDone. CSVs under: {csv_dir}")
+    rc = 0
+    if collapsed:
+        print(f"FAIL: methods produced zero successful rows (likely a build/runtime break): {collapsed}")
+        rc = 1
+    if incomplete_core:
+        print(f"FAIL: core BTC method(s) did not cover all {n_ds} datasets: {incomplete_core}")
+        rc = 1
+    if rc == 0:
+        print("OK: every core method is complete and no method fully collapsed.")
+    return rc
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@
 # Tunables (env): BTC_DL_TIMEOUT (idle seconds, default 60),
 #                 BTC_DL_TRIES  (attempts per file, default 4).
 set -uo pipefail
+cd "$(dirname "$0")/.."   # always operate from the repo root
 
 DATA_DIR="data"
 mkdir -p "$DATA_DIR"

@@ -47,4 +47,11 @@ check "ToT     cant"     "$TOT" "data/cant.mtx"      "18370150"
 
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed, $((TOTAL - PASS - FAIL)) skipped / $TOTAL total ==="
-[ "$FAIL" -eq 0 ] && echo "ALL PASSED" || { echo "SOME TESTS FAILED"; exit 1; }
+# Require every test to have actually RUN and passed — otherwise a run where all
+# tests were SKIPPED (missing binary/dataset) would print ALL PASSED and exit 0.
+if [ "$PASS" -eq "$TOTAL" ]; then
+    echo "ALL PASSED"
+else
+    echo "NOT ALL PASSED: $PASS/$TOTAL passed ($FAIL failed, $((TOTAL - PASS - FAIL)) skipped)"
+    exit 1
+fi

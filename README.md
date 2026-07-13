@@ -28,7 +28,7 @@
 | Heng Zhang ✉ | zhangheng17@iscas.ac.cn |
 
 - **Code:** <https://github.com/fanna1234/btc-tc-artifact>
-- **Archived:** Zenodo DOI — assigned at the 2026-08-25 artifact freeze (added here once minted)
+- **Archived:** code-artifact Zenodo DOI is assigned at the 2026-08-25 freeze (added here once minted); the 36-dataset mirror is already at DOI 10.5281/zenodo.21306210
 
 ## Contents
 
@@ -296,7 +296,7 @@ with a direct reviewer-facing verification path:
 
 | Badge | How a reviewer verifies it |
 |-------|----------------------------|
-| **Artifacts Available** | Public repository, archived on Zenodo with a persistent DOI (see [Citation](#citation)). |
+| **Artifacts Available** | Public repository; a persistent Zenodo DOI for the code artifact is assigned at the 2026-08-25 freeze (the 36-dataset mirror is already archived at DOI 10.5281/zenodo.21306210). |
 | **Artifacts Evaluated — Functional** | `bash scripts/run_all.sh --smoke` builds BTC-TC + baselines and passes all correctness checks (~5 min). |
 | **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the headline speedups (1.92× kernel, 8.0× E2E) in ~20 min. |
 

@@ -19,3 +19,6 @@ baselines/TC-Compare/approach/H-INDEX/hindex
 baselines/TC-Compare/approach/polak/polak
 baselines/TC-Compare/approach/tricore/tricore
 baselines/TC-Compare/approach/*/bin/ofiles/
+baselines/TC-Compare/approach/Green/green
+nohup.out
+*.out

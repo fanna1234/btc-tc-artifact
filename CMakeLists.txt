@@ -50,6 +50,17 @@ if(NOT DEFINED CMAKE_CUDA_COMPILER)
     message(STATUS "Using nvcc from PATH: ${_BTC_NVCC}")
   endif()
 endif()
+# Keep the toolkit root CONSISTENT with the compiler selected above: derive it from
+# the nvcc path so we never pair a 13.x compiler with 12.x headers/libs (or vice
+# versa) on a host that has several CUDA installs. Only fall back to an independent
+# probe when no compiler was explicitly selected.
+if(DEFINED CMAKE_CUDA_COMPILER AND NOT DEFINED CUDAToolkit_ROOT)
+  get_filename_component(_btc_nvcc_bin "${CMAKE_CUDA_COMPILER}" DIRECTORY)   # .../bin
+  get_filename_component(_btc_cuda_home "${_btc_nvcc_bin}" DIRECTORY)         # toolkit root
+  if(_btc_cuda_home AND EXISTS "${_btc_cuda_home}")
+    set(CUDAToolkit_ROOT "${_btc_cuda_home}" CACHE PATH "CUDA toolkit root" FORCE)
+  endif()
+endif()
 foreach(_cuda_ver ${_btc_cuda_vers})
   if(NOT DEFINED CUDAToolkit_ROOT AND EXISTS "/usr/local/cuda-${_cuda_ver}")
     set(CUDAToolkit_ROOT "/usr/local/cuda-${_cuda_ver}" CACHE PATH "CUDA toolkit root" FORCE)

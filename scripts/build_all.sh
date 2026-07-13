@@ -19,16 +19,25 @@ echo "  BTC-TC Full Build"
 echo "============================================"
 
 # Step 1: Main project + ToT + cuSPARSE (CMake)
-echo "[1/5] Building main project (BTC-TC + ToT + cuSPARSE)..."
+echo "[1/6] Building main project (BTC-TC + ToT + cuSPARSE)..."
 mkdir -p build && cd build
-cmake .. 2>&1 | tail -3
-make -j$(nproc) 2>&1 | tail -3
+# NOTE: do NOT pipe cmake/make into `tail` — the pipe would return tail's status and
+# hide a real configure/compile failure (set -e can't see it). Capture + check instead.
+if ! cmake .. > /tmp/btc_cmake.log 2>&1; then
+    tail -25 /tmp/btc_cmake.log; echo "  ERROR: cmake configure failed (full log: /tmp/btc_cmake.log)"; exit 1
+fi
+if ! make -j$(nproc) > /tmp/btc_make.log 2>&1; then
+    tail -30 /tmp/btc_make.log; echo "  ERROR: main build (make) failed (full log: /tmp/btc_make.log)"; exit 1
+fi
 cd "$ROOT"
+if [ ! -x build/apps/btc_tc_lite ]; then
+    echo "  ERROR: build succeeded but build/apps/btc_tc_lite was not produced"; exit 1
+fi
 echo "  Done: build/apps/btc_tc_lite, build/baselines/ToT-TPDS25/apps/tot"
 echo ""
 
 # Step 2: TC-Compare baselines (individual Makefiles)
-echo "[2/5] Building TC-Compare baselines..."
+echo "[2/6] Building TC-Compare baselines..."
 TC_DIR="baselines/TC-Compare/approach"
 
 # Tricore needs a CCCL patch for CUDA >= 13.2 (ADL ambiguity in block_load_to_shared.cuh)
@@ -94,7 +103,7 @@ fi
 echo ""
 
 # Step 3: TRUST
-echo "[3/5] Building TRUST..."
+echo "[3/6] Building TRUST..."
 TRUST_DIR="baselines/TRUST"
 if [ -d "$TRUST_DIR/Without-graph-partition" ] && [ -f "$TRUST_DIR/Without-graph-partition/Makefile" ]; then
     echo -n "  TRUST... "
