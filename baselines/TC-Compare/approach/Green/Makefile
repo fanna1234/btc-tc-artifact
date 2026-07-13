@@ -13,6 +13,9 @@ PARAM = bin/ofiles/param.o
 #GRAPHOP = bin/ofiles/graphOperations.o
 GRAPHREAD = bin/ofiles/graphRead.o
 DBG_FLAGS = -lineinfo -g -G
+# nvToolsExt is a CUDA<=12 library; CUDA 13 removed it (NVTX3 is header-only). Green does
+# not call NVTX, so link the lib only when it is actually present -> builds on 12 and 13.
+NVTX_LIB := $(if $(wildcard /usr/local/cuda/lib64/libnvToolsExt.so)$(wildcard /usr/local/cuda-*/lib64/libnvToolsExt.so),-lnvToolsExt,)
 
 CPURUNDEPS = src/cpurun.cpp include/cpurun.hpp
 GPURUNDEPS = src/gpurun.cu include/gpurun.cuh
@@ -53,9 +56,9 @@ $(GPUTRIANGLECOUNT): $(GPUTRIANGLECOUNTDEPS)
 #$(CPUTRIANGLECOUNT): $(CPUTRIANGLECOUNTDEPS)
 #	$(COMPILE) -c src/clusteringCount.cpp -o $(CPUTRIANGLECOUNT)
 
-#	$(COMPILE) $(EXECDEPS) -lnvToolsExt -Xcompiler -fopenmp -o $(EXEC)
+#	$(COMPILE) $(EXECDEPS) $(NVTX_LIB) -Xcompiler -fopenmp -o $(EXEC)
 $(EXEC): $(EXECDEPS)
-	$(COMPILE) $(EXECDEPS) -lnvToolsExt -Xcompiler -fopenmp -o $(EXEC)
+	$(COMPILE) $(EXECDEPS) $(NVTX_LIB) -Xcompiler -fopenmp -o $(EXEC)
 
 clean:
 	rm -f $(EXEC)
