@@ -124,7 +124,7 @@ GRB_DIR="baselines/SuiteSparse-GraphBLAS-cuda"
 GRB_LIB="$GRB_DIR/build/libgraphblas.so"
 if [ -d "$GRB_DIR" ]; then
     if [ ! -f "$GRB_LIB" ]; then
-        echo "  GraphBLAS (this may take 5-10 minutes)..."
+        echo "  GraphBLAS (~1-2 minutes)..."
         mkdir -p "$GRB_DIR/build" && cd "$GRB_DIR/build"
         if cmake .. -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -3 && make -j$(nproc) 2>&1 | tail -5; then
             echo "  GraphBLAS: OK"

@@ -2,9 +2,9 @@
 # BTC-TC SC26 — one-command full reproduction from scratch.
 #
 # Usage:
-#   bash scripts/run_all.sh           # full pipeline, ~2.5-3 hours
-#   bash scripts/run_all.sh --quick   # core claims only, ~35 min
-#   bash scripts/run_all.sh --smoke   # build + correctness only, ~15 min
+#   bash scripts/run_all.sh           # full pipeline, ~1-1.5 h
+#   bash scripts/run_all.sh --quick   # core claims only, ~20 min
+#   bash scripts/run_all.sh --smoke   # build + correctness only, ~5 min
 #
 # Chains: OS-deps check -> pip -> datasets -> build -> smoke -> reproduce.
 # Exits on any step failure with a clear message.
@@ -89,8 +89,8 @@ fi
 
 # ---------- Step 3: Build ----------
 echo
-echo "$(ts) [3/5] Building BTC-TC + baselines (~30-45 min on first run)..."
-echo "  This compiles GraphBLAS from source — go get coffee."
+echo "$(ts) [3/5] Building BTC-TC + baselines (~3-5 min)..."
+echo "  This compiles GraphBLAS from source."
 bash scripts/build_all.sh 2>&1 | tail -20
 if [ ! -x "./build/apps/btc_tc_lite" ]; then
     echo "  [!] build failed: btc_tc_lite missing"
@@ -114,10 +114,10 @@ fi
 # ---------- Step 5: Full or Quick reproduction ----------
 echo
 if [ "$MODE" = "quick" ]; then
-    echo "$(ts) [5/5] Quick reproduction (BTC + ToT + TRUST, ~30 min)..."
+    echo "$(ts) [5/5] Quick reproduction (BTC + ToT + TRUST, ~15 min)..."
     bash scripts/reproduce_paper.sh --quick
 else
-    echo "$(ts) [5/5] Full reproduction (all 15 methods x 36 datasets, ~2-3 h)..."
+    echo "$(ts) [5/5] Full reproduction (all 15 methods x 36 datasets, ~1-1.5 h)..."
     bash scripts/reproduce_paper.sh
 fi
 

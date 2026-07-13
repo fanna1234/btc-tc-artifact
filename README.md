@@ -80,13 +80,13 @@ reproduction.
 # Before the first run, install OS packages (needs sudo):
 sudo apt-get install -y libnuma-dev libboost-all-dev libopenmpi-dev bc python3-pip g++-12
 
-bash scripts/run_all.sh           # full reproduction,  ~2.5-3 hours
-bash scripts/run_all.sh --quick   # core claims only,   ~35 min
-bash scripts/run_all.sh --smoke   # build + correctness, ~15 min
+bash scripts/run_all.sh           # full reproduction,  ~1-1.5 h
+bash scripts/run_all.sh --quick   # core claims only,   ~20 min
+bash scripts/run_all.sh --smoke   # build + correctness, ~5 min
 ```
 
 Total disk: ~9 GB (datasets 3.2 GB extracted + build 5-6 GB). Total wall time on a
-single modern NVIDIA GPU (sm_80+): roughly 15 min for smoke, 35 min for quick, 3 h
+single modern NVIDIA GPU (sm_80+): roughly 4 min for smoke, 20 min for quick, 1.5 h
 for full. `run_all.sh` is idempotent — rerunning resumes from the last failed step.
 
 ### Manual Fallback
@@ -101,13 +101,13 @@ pip install -r requirements.txt
 # 2. Download 36 benchmark datasets (~3.2 GB on disk)
 bash scripts/download_datasets.sh
 
-# 3. Build BTC-TC + baselines (~30-45 min, compiles GraphBLAS from source)
+# 3. Build BTC-TC + baselines (~3-5 min, compiles GraphBLAS from source)
 bash scripts/build_all.sh
 
 # 4. Smoke test (<1 min)
 bash scripts/smoke_test.sh
 
-# 5. Full reproduction (~2-3 hours) — or add --quick for ~30 min
+# 5. Full reproduction (~1-1.5 h) — or add --quick for ~15 min
 bash scripts/reproduce_paper.sh
 ```
 
@@ -171,7 +171,7 @@ figure, and **Check** the number with a copy-paste one-liner. The checks read th
 ### Table IV — correctness, kernel & E2E speedup (master table)
 
 ```bash
-# Run (all 36 graphs, ~3.4 min): writes results-reproduce/csv/{BTC_Lite,ToT,TRUST}.csv
+# Run (all 36 graphs, ~15 min): writes results-reproduce/csv/{BTC_Lite,ToT,TRUST}.csv
 bash scripts/reproduce_paper.sh --quick
 ```
 
@@ -297,8 +297,8 @@ with a direct reviewer-facing verification path:
 | Badge | How a reviewer verifies it |
 |-------|----------------------------|
 | **Artifacts Available** | Public repository, archived on Zenodo with a persistent DOI (see [Citation](#citation)). |
-| **Artifacts Evaluated — Functional** | `bash scripts/run_all.sh --smoke` builds BTC-TC + baselines and passes all correctness checks (~15 min). |
-| **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the headline speedups (1.92× kernel, 8.0× E2E) in ~35 min. |
+| **Artifacts Evaluated — Functional** | `bash scripts/run_all.sh --smoke` builds BTC-TC + baselines and passes all correctness checks (~5 min). |
+| **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the headline speedups (1.92× kernel, 8.0× E2E) in ~20 min. |
 
 Every paper claim is mapped to its exact command and expected value in
 **[CLAIMS.md](CLAIMS.md)**.

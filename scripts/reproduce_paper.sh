@@ -2,7 +2,7 @@
 # One-click reproduction of all SC26 paper results.
 # Usage: bash scripts/reproduce_paper.sh [--quick]
 #   --quick: only run BTC-TC + ToT + TRUST (skip other baselines)
-# Expected runtime: 30 min (quick) or 2-3 hours (full)
+# Expected runtime: ~15 min (quick) or ~1-1.5 h (full)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
