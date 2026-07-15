@@ -2,7 +2,7 @@
 # One-click reproduction of all SC26 paper results.
 # Usage: bash scripts/reproduce_paper.sh [--quick]
 #   --quick: only run BTC-TC + ToT + TRUST (skip other baselines)
-# Expected runtime: ~15 min (quick) or ~1-1.5 h (full)
+# Expected runtime: ~15 min (quick) or ~1.5-2 h (full)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -91,8 +91,12 @@ if tot is not None:
     _m = btc.merge(tot, on='Dataset', suffixes=('_btc','_tot'))
     _exact = int((_m['Triangles_btc'].astype(str) == _m['Triangles_tot'].astype(str)).sum())
     print(f'  Run (completed): ToT {len(tot)}/36')
+    if len(tot) < 36:
+        print(f'  WARNING: ToT ran on only {len(tot)}/36 graphs — the speedup GM below is over that overlap; a large shortfall points to a ToT build/run issue on this GPU, not a BTC-TC problem')
     print(f'  Exact triangle match vs BTC-TC: ToT {_exact}/{len(_m)} '
           f'(BTC-TC is exact; cross-check vs CPU LAGraph via CLAIMS.md)')
+else:
+    print('  WARNING: ToT results missing — the ToT speedup comparison cannot be computed (check the ToT baseline build)')
 
 # Kernel speedup
 if tot is not None:
@@ -104,7 +108,7 @@ if tot is not None:
         gm_btc = np.exp(np.mean(np.log(valid['Kernel_ms_btc'])))
         gm_tot = np.exp(np.mean(np.log(valid['Kernel_ms_tot'])))
         speedup = gm_tot / gm_btc
-        print(f'  Kernel speedup vs ToT: {speedup:.2f}x (expect ~1.9x)')
+        print(f'  Kernel speedup vs ToT: {speedup:.2f}x (device-specific; see AD/AE for your GPU target)')
 
 print('  Verification complete.')
 "
@@ -112,9 +116,11 @@ VERIFY_RC=$?
 echo ""
 
 # Step 4: Ablation experiments (Fig 9)
+SECONDARY_FAIL=0   # tracks non-zero exits from the Fig 6/9 + figure steps below (full mode only)
 echo "[Step 4] Running ablation experiments (Fig 9)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_ablation.sh 2>&1 | grep -E "^=|OK|FAIL|Saved" | tail -10
+    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_ablation.sh reported a non-zero exit (Fig 9a)"; }
 else
     echo "  Skipped in quick mode"
 fi
@@ -124,7 +130,9 @@ echo ""
 echo "[Step 5] Running block-size bench + reorder compare (Fig 9)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_blocksize_bench_paper37.sh 2>&1 | tail -5
+    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_blocksize_bench_paper37.sh reported a non-zero exit (Fig 9c)"; }
     bash scripts/run_reorder_compare.sh 2>&1 | tail -5
+    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_reorder_compare.sh reported a non-zero exit (Fig 9d)"; }
 else
     echo "  Skipped in quick mode"
 fi
@@ -134,7 +142,9 @@ echo ""
 echo "[Step 6] Running tau sweep + E2E breakdown (Fig 6)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_tau_sweep.sh both 2>&1 | tail -5
+    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_tau_sweep.sh reported a non-zero exit (Fig 6)"; }
     bash scripts/run_e2e_breakdown.sh 2>&1 | tail -5
+    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_e2e_breakdown.sh reported a non-zero exit (E2E breakdown)"; }
 else
     echo "  Skipped in quick mode"
 fi
@@ -144,12 +154,13 @@ echo ""
 echo "[Step 7] Generating figures..."
 export BTC_CSV_DIR="$RESULT_DIR/csv"
 bash scripts/regenerate_all_figures.sh 2>&1 | grep -E "^\[|Done|Error"
+[ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: regenerate_all_figures.sh reported a non-zero exit (one or more figures failed)"; }
 echo ""
 
 echo "============================================"
-if [ "${VERIFY_RC:-0}" -ne 0 ] || [ "${BENCH_RC:-0}" -ne 0 ]; then
-    echo "  Reproduction INCOMPLETE — core verification or benchmark reported failures"
-    echo "  (verification rc=${VERIFY_RC:-0}, benchmark rc=${BENCH_RC:-0}); see errors/summary above"
+if [ "${VERIFY_RC:-0}" -ne 0 ] || [ "${BENCH_RC:-0}" -ne 0 ] || [ "${SECONDARY_FAIL:-0}" -ne 0 ]; then
+    echo "  Reproduction INCOMPLETE — one or more required steps reported failures"
+    echo "  (verification rc=${VERIFY_RC:-0}, benchmark rc=${BENCH_RC:-0}, secondary/figures failed=${SECONDARY_FAIL:-0}); see errors/summary above"
     echo "  Results: $RESULT_DIR/   Figures: results/figures/"
     echo "============================================"
     exit 1

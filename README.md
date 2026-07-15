@@ -304,7 +304,7 @@ with a direct reviewer-facing verification path:
 |-------|----------------------------|
 | **Artifacts Available** | Public repository; a persistent Zenodo DOI for the code artifact is assigned at the 2026-08-25 freeze (the 36-dataset mirror is already archived at DOI 10.5281/zenodo.21306210). |
 | **Artifacts Evaluated — Functional** | `bash scripts/run_all.sh --smoke` builds BTC-TC + baselines and passes all correctness checks (~5 min). |
-| **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the headline speedups (1.92× kernel, 8.0× E2E) in ~20 min. |
+| **Results Reproduced** | `bash scripts/run_all.sh --quick` reproduces the device-independent correctness invariant (BTC-TC **36/36** bit-exact, ToT **24/36**) and the kernel speedup over ToT for your GPU (≈1.9× on the paper's RTX PRO 6000; ≈2.3–2.4× on the Chameleon A100/H100 — see the AD/AE appendix for the per-device target) in ~20 min. |
 
 Every paper claim is mapped to its exact command and expected value in
 **[CLAIMS.md](CLAIMS.md)**.

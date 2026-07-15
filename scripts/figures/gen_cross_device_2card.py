@@ -95,21 +95,29 @@ def main():
     for spec in SPECS:
         cdir = spec["dir"]
         if not (cdir / "BTC_Lite.csv").exists() or not (cdir / "ToT.csv").exists():
-            print(f"{spec['short']!r:>14}: SKIPPED (missing CSV in {cdir})")
+            print(f"  ERROR: missing BTC_Lite.csv or ToT.csv in {cdir} "
+                  f"(need a completed run for this device)", file=sys.stderr)
             continue
         df = build_device_df(cdir, paper_set)
         kernel_data.append(df["Kernel_Speedup"].to_numpy())
         e2e_data.append(df["E2E_Speedup"].to_numpy())
         valid.append(spec)
-        n = len(df); exact_btc = n  # BTC is exact by construction (== ground truth)
-        tot_exact = int(df["ToT_exact"].sum())
-        print(f"{spec['short'].splitlines()[0]:>6}: n={n}  "
+        n = len(df)
+        # This helper only reads the run's own CSVs; it reports how many paper graphs
+        # completed and how often ToT's count matches BTC-TC's (BTC-TC being the exact
+        # reference). It does NOT itself re-verify BTC-TC against the CPU oracle — that
+        # is the job of reproduce_paper.sh / CLAIMS.md (LAGraph).
+        tot_match = int(df["ToT_exact"].sum())
+        print(f"{spec['short'].splitlines()[0]:>6}: n={n}/{len(paper_set)}  "
               f"Kernel GM={geomean(df['Kernel_Speedup']):.3f}x  "
               f"E2E GM={geomean(df['E2E_Speedup']):.3f}x  "
-              f"BTC exact={exact_btc}/{n}  ToT exact={tot_exact}/{n}")
+              f"BTC completed={n}/{len(paper_set)}  ToT matches BTC on {tot_match}/{n}")
 
-    if not valid:
-        print("no device data present yet — rerun once H100 CSVs land"); return
+    if len(valid) < len(SPECS):
+        print(f"  ERROR: this is a two-device figure but only {len(valid)}/{len(SPECS)} "
+              f"device(s) had usable CSVs; provide completed runs for BOTH A100 and H100.",
+              file=sys.stderr)
+        sys.exit(1)
 
     fig, ax = plt.subplots(1, 1, figsize=(3.45, 2.85))
     style_ax(ax)
