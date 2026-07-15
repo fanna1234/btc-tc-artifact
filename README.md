@@ -3,10 +3,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![SC26](https://img.shields.io/badge/SC26-accepted-2ea44f.svg)](https://sc26.supercomputing.org/)
 [![DOI](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](#citation)
+[![Reproduced on Chameleon](https://img.shields.io/badge/reproduced-Chameleon%20A100%20%2B%20H100-2ea44f.svg)](#artifact-evaluation)
 
 > **Reproducibility artifact for the SC '26 paper.**<br>
 > A claim-indexed, end-to-end package for building, validating, and reproducing
 > the reported results.
+
+> Independently reproduced end-to-end on neutral **Chameleon Cloud** bare-metal
+> nodes — A100 (`sm_80`, CHI@UC) and H100 (`sm_90`, CHI@TACC): **36/36 bit-exact**
+> on both, kernel geomean 2.3–2.4× over ToT, no local GPU required. See
+> [Artifact Evaluation](#artifact-evaluation).
 
 > Kaifan Jia, Yongchun Jiang, Zhihao Ling, Minghui Zhang, Xuran Wang, Ran Bao,
 > Haonan Zou, and Heng Zhang.
