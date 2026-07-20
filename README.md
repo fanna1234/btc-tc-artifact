@@ -337,7 +337,7 @@ btc-tc-artifact/
 │   ├── h100/csv/             H100 SXM (Hopper sm_90a)
 │   ├── a800/csv/             A800 SXM (Ampere sm_80)
 │   ├── ablation/csv/         Ablation study data
-│   └── ...                   tau_sweep, e2e_breakdown, ncu, etc.
+│   └── ...                   tau_sweep, ncu, etc.
 ├── data/
 │   └── paper_datasets.txt    36 dataset names
 ├── CLAIMS.md             Claim-to-command verification guide
@@ -374,7 +374,7 @@ cmake .. -DBTC_BUILD_BASELINES=OFF && make -j$(nproc)
 2. **Full benchmark** — all methods x 36 datasets (5 runs each)
 3. **Claim verification** — automated check of key paper numbers
 4. **Ablation experiments** — hybrid dispatch, block-size, MMA shape, reordering
-5. **Sensitivity sweeps** — threshold (tau) and E2E breakdown
+5. **Sensitivity sweep** — dispatch threshold (tau)
 6. **Figure generation** — all paper figures from result CSVs
 
 ### Verification Without Re-running

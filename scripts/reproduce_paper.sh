@@ -138,13 +138,11 @@ else
 fi
 echo ""
 
-# Step 6: Tau sensitivity sweep + E2E breakdown (Fig 6)
-echo "[Step 6] Running tau sweep + E2E breakdown (Fig 6)..."
+# Step 6: Tau sensitivity sweep (Fig 6)
+echo "[Step 6] Running tau sweep (Fig 6)..."
 if [ "$QUICK" -eq 0 ]; then
     bash scripts/run_tau_sweep.sh both 2>&1 | tail -5
     [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_tau_sweep.sh reported a non-zero exit (Fig 6)"; }
-    bash scripts/run_e2e_breakdown.sh 2>&1 | tail -5
-    [ "${PIPESTATUS[0]}" -ne 0 ] && { SECONDARY_FAIL=1; echo "  WARNING: run_e2e_breakdown.sh reported a non-zero exit (E2E breakdown)"; }
 else
     echo "  Skipped in quick mode"
 fi
